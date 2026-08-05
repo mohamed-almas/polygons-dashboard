@@ -1,5 +1,8 @@
-import { Map as MaplibreMap, Popup } from 'maplibre-gl'
+import maplibregl from 'maplibre-gl'
 import { supabase } from './supabaseClient.js'
+
+const MaplibreMap = maplibregl.Map
+const Popup = maplibregl.Popup
 
 const RPC_NAME = {
   port: 'polygons_ports_geojson',

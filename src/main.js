@@ -1,4 +1,5 @@
 import './style.css'
+import 'maplibre-gl/dist/maplibre-gl.css'
 import { initMap } from './map.js'
 import { renderKpiCards } from './kpi.js'
 
