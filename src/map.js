@@ -26,11 +26,19 @@ export async function initMap(containerId) {
   let currentLevel = 'port'
 
   async function fetchLevelGeoJson(level) {
-    const { data, error } = await supabase.rpc(RPC_NAME[level])
-    if (error) throw error
+    const pageSize = 1000
+    let allRows = []
+    let from = 0
+    while (true) {
+      const { data, error } = await supabase.rpc(RPC_NAME[level]).range(from, from + pageSize - 1)
+      if (error) throw error
+      allRows = allRows.concat(data)
+      if (data.length < pageSize) break
+      from += pageSize
+    }
     return {
       type: 'FeatureCollection',
-      features: data.map((row) => ({
+      features: allRows.map((row) => ({
         type: 'Feature',
         properties: { id: row.id, area_sqm: row.area_sqm, name: row.polygon_name },
         geometry: JSON.parse(row.geom_json),
