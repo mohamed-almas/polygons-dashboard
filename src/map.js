@@ -1,5 +1,6 @@
 import maplibregl from 'maplibre-gl'
 import { supabase } from './supabaseClient.js'
+import { formatCompact, cleanName } from './format.js'
 
 const MaplibreMap = maplibregl.Map
 const Popup = maplibregl.Popup
@@ -10,13 +11,13 @@ const RPC_NAME = {
   berth: 'polygons_berths_geojson',
 }
 
-// Port: outline only, no fill. Terminal/Berth: filled + outlined.
-export const LEVEL_COLOR = {
-  port: '#2563eb',
-  terminal: '#d97706',
-  berth: '#dc2626',
+export const LEVEL_STYLE = {
+  port: { line: '#000000', fill: '#ffffff', fillOpacity: 0.05, lineWidth: 2.5 },
+  terminal: { line: '#2563eb', fill: '#2563eb', fillOpacity: 0.35, lineWidth: 1.5 },
+  berth: { line: '#dc2626', fill: '#dc2626', fillOpacity: 0.35, lineWidth: 1.5 },
 }
 
+// Bottom to top: port sits under terminal/berth.
 const LEVELS = ['port', 'terminal', 'berth']
 
 // Light, borders-only basemap with no graticule/lat-lon lines.
@@ -39,33 +40,67 @@ async function fetchLevelGeoJson(level, scope, value) {
     type: 'FeatureCollection',
     features: allRows.map((row) => ({
       type: 'Feature',
-      properties: { id: row.id, area_sqm: row.area_sqm, name: row.polygon_name, level },
+      properties: {
+        id: row.id,
+        area_sqm: row.area_sqm,
+        name: row.polygon_name,
+        port_name: row.port_name,
+        terminal_name: row.terminal_name ?? null,
+        level,
+      },
       geometry: JSON.parse(row.geom_json),
     })),
   }
 }
 
+function tooltipContent(props) {
+  const container = document.createElement('div')
+  const lines = []
+  if (props.level === 'port') {
+    lines.push(props.port_name)
+  } else if (props.level === 'terminal') {
+    lines.push(`Port: ${props.port_name}`)
+    lines.push(cleanName(props.name))
+  } else {
+    lines.push(`Port: ${props.port_name}`)
+    if (props.terminal_name) lines.push(`Terminal: ${cleanName(props.terminal_name)}`)
+    lines.push(cleanName(props.name))
+  }
+  lines.forEach((line, i) => {
+    const el = document.createElement(i === 0 ? 'strong' : 'div')
+    el.textContent = line
+    container.appendChild(el)
+  })
+  const area = document.createElement('div')
+  area.className = 'tooltip-area'
+  area.textContent = `Area: ${formatCompact(props.area_sqm)} sqkm`
+  container.appendChild(area)
+  return container
+}
+
 function addLevelLayers(map, level) {
+  const style = LEVEL_STYLE[level]
   const sourceId = `polygons-${level}-source`
   const fillLayerId = `polygons-${level}-fill`
   const lineLayerId = `polygons-${level}-line`
 
   map.addSource(sourceId, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
 
-  if (level !== 'port') {
-    map.addLayer({
-      id: fillLayerId,
-      type: 'fill',
-      source: sourceId,
-      paint: { 'fill-color': LEVEL_COLOR[level], 'fill-opacity': 0.45 },
-    })
-  }
+  // Every level gets a fill layer (even the near-invisible port wash) so
+  // hovering anywhere inside the polygon -- not just on the border -- fires
+  // the tooltip.
+  map.addLayer({
+    id: fillLayerId,
+    type: 'fill',
+    source: sourceId,
+    paint: { 'fill-color': style.fill, 'fill-opacity': style.fillOpacity },
+  })
 
   map.addLayer({
     id: lineLayerId,
     type: 'line',
     source: sourceId,
-    paint: { 'line-color': LEVEL_COLOR[level], 'line-width': level === 'port' ? 1.5 : 1 },
+    paint: { 'line-color': style.line, 'line-width': style.lineWidth },
   })
 
   const hoverPopup = new Popup({ closeButton: false, closeOnClick: false })
@@ -73,25 +108,15 @@ function addLevelLayers(map, level) {
   const onMove = (e) => {
     if (!e.features || e.features.length === 0) return
     map.getCanvas().style.cursor = 'pointer'
-    const props = e.features[0].properties
-    const areaLabel = `${Math.round(Number(props.area_sqm)).toLocaleString()} sqm`
-    const container = document.createElement('div')
-    const strong = document.createElement('strong')
-    strong.textContent = props.name
-    container.appendChild(strong)
-    container.appendChild(document.createElement('br'))
-    container.appendChild(document.createTextNode(areaLabel))
-    hoverPopup.setLngLat(e.lngLat).setDOMContent(container).addTo(map)
+    hoverPopup.setLngLat(e.lngLat).setDOMContent(tooltipContent(e.features[0].properties)).addTo(map)
   }
   const onLeave = () => {
     map.getCanvas().style.cursor = ''
     hoverPopup.remove()
   }
 
-  if (level !== 'port') map.on('mousemove', fillLayerId, onMove)
-  map.on('mousemove', lineLayerId, onMove)
-  map.on('mouseleave', lineLayerId, onLeave)
-  if (level !== 'port') map.on('mouseleave', fillLayerId, onLeave)
+  map.on('mousemove', fillLayerId, onMove)
+  map.on('mouseleave', fillLayerId, onLeave)
 }
 
 export async function initMap(containerId) {
@@ -116,7 +141,7 @@ export async function initMap(containerId) {
         const sourceId = `polygons-${level}-source`
         const visibility = activeLevels.has(level) ? 'visible' : 'none'
         map.setLayoutProperty(`polygons-${level}-line`, 'visibility', visibility)
-        if (level !== 'port') map.setLayoutProperty(`polygons-${level}-fill`, 'visibility', visibility)
+        map.setLayoutProperty(`polygons-${level}-fill`, 'visibility', visibility)
         if (!activeLevels.has(level)) return
         const geojson = await fetchLevelGeoJson(level, currentScope, currentValue)
         map.getSource(sourceId).setData(geojson)
@@ -148,8 +173,6 @@ export async function initMap(containerId) {
       map.fitBounds([[minLon, minLat], [maxLon, maxLat]], { padding: 40, maxZoom: 12 })
     }
   }
-
-  await refresh()
 
   return { map, setScope, setActiveLevels, fitBounds }
 }
