@@ -7,20 +7,41 @@
   </head>
   <body>
     <div id="app">
+      <header id="topbar">
+        <h1>Port Terminal &amp; Berth Polygons</h1>
+      </header>
+
       <div id="controls">
-        <select id="level-select">
-          <option value="port">Port</option>
-          <option value="terminal">Terminal</option>
-          <option value="berth">Berth</option>
-        </select>
-        <select id="scope-select">
-          <option value="global">Global</option>
-          <option value="region">Region</option>
-          <option value="country">Country</option>
-        </select>
+        <div class="control-group">
+          <label>Layers</label>
+          <div id="level-toggles" class="level-toggles">
+            <label class="level-toggle"><input type="checkbox" value="port" checked /><span class="swatch swatch-port"></span>Ports</label>
+            <label class="level-toggle"><input type="checkbox" value="terminal" checked /><span class="swatch swatch-terminal"></span>Terminals</label>
+            <label class="level-toggle"><input type="checkbox" value="berth" checked /><span class="swatch swatch-berth"></span>Berths</label>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label for="region-select">Region</label>
+          <select id="region-select"><option value="">World</option></select>
+        </div>
+
+        <div class="control-group">
+          <label for="country-select">Country</label>
+          <select id="country-select"><option value="">All countries</option></select>
+        </div>
+
+        <div class="control-group">
+          <label for="port-select">Port</label>
+          <select id="port-select"><option value="">All ports</option></select>
+        </div>
       </div>
+
       <div id="kpi-cards"></div>
-      <div id="map"></div>
+
+      <div id="map-container">
+        <div id="map"></div>
+      </div>
     </div>
     <script type="module" src="/src/main.js"></script>
   </body>
