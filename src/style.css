@@ -3,3 +3,7 @@ html, body, #app { height: 100%; margin: 0; }
 #controls { padding: 8px; display: flex; gap: 8px; }
 #kpi-cards { display: flex; gap: 12px; padding: 0 8px 8px; }
 #map { flex: 1; }
+
+.kpi-card { background: #f5f5f5; border-radius: 6px; padding: 8px 16px; text-align: center; }
+.kpi-value { font-size: 1.4em; font-weight: bold; }
+.kpi-label { font-size: 0.8em; color: #555; }
