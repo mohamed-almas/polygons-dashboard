@@ -13,9 +13,20 @@ system-wide (reproduced in a fresh venv outside this repo, and via a plain
 virtualenv workaround. Talking to PostgREST directly sidesteps the
 dependency entirely and needs nothing beyond the standard library.
 
+This script expects a local checkout that has sibling `Data/` and
+`References/` directories somewhere above `load/` on disk (the provider's raw
+CSVs, kept out of this app repo by design) - i.e. it's designed to run from
+the internal monorepo, not from a bare `git clone` of this repo alone. If
+you've copied the CSVs in elsewhere, point the script at that location with
+`--data-dir` or the `POLYGONS_DATA_DIR` env var; see README.md's "Data
+refresh" section for details.
+
 Usage:
     python load.py
+    python load.py --data-dir /path/to/dir/containing/Data/and/References
+    POLYGONS_DATA_DIR=/path/to/dir python load.py
 """
+import argparse
 import csv
 import glob
 import json
@@ -61,13 +72,37 @@ def _find_repo_data_root(start: Path) -> Path:
         if (candidate / "Data").is_dir() and (candidate / "References").is_dir():
             return candidate
     raise FileNotFoundError(
-        f"Could not locate a 'Data' + 'References' sibling pair above {start}"
+        f"Could not locate a 'Data' + 'References' sibling pair above {start}. "
+        "This script expects a local checkout with sibling Data/ and "
+        "References/ directories (the internal monorepo layout), not a bare "
+        "clone of this repo. Pass --data-dir or set POLYGONS_DATA_DIR to "
+        "point at a directory that itself contains Data/ and References/."
     )
 
 
-_REPO_ROOT = _find_repo_data_root(Path(__file__).resolve())
-DATA_DIR = _REPO_ROOT / "Data"
-REFERENCES_DIR = _REPO_ROOT / "References"
+def _resolve_data_root(override: str = None) -> Path:
+    """Resolve the directory containing Data/ and References/.
+
+    Priority: --data-dir CLI arg > POLYGONS_DATA_DIR env var > upward search
+    from this file's location (the internal-monorepo default).
+    """
+    override = override or os.environ.get("POLYGONS_DATA_DIR")
+    if override:
+        root = Path(override).resolve()
+        if not (root / "Data").is_dir() or not (root / "References").is_dir():
+            raise FileNotFoundError(
+                f"--data-dir/POLYGONS_DATA_DIR {root} does not contain both "
+                "a 'Data' and a 'References' directory"
+            )
+        return root
+    return _find_repo_data_root(Path(__file__).resolve())
+
+
+# Populated by main() before any loader function runs; module-level so the
+# loader functions below (which are also imported/used standalone) can refer
+# to them without threading an argument through every call.
+DATA_DIR = None
+REFERENCES_DIR = None
 
 
 class SupabaseREST:
@@ -210,6 +245,23 @@ def load_berths(client):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--data-dir",
+        default=None,
+        help=(
+            "Directory containing sibling Data/ and References/ directories. "
+            "Overrides the default upward-search and the POLYGONS_DATA_DIR "
+            "env var if both are set."
+        ),
+    )
+    args = parser.parse_args()
+
+    global DATA_DIR, REFERENCES_DIR
+    repo_root = _resolve_data_root(args.data_dir)
+    DATA_DIR = repo_root / "Data"
+    REFERENCES_DIR = repo_root / "References"
+
     url = os.environ["SUPABASE_URL"]
     key = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
     client = SupabaseREST(url, key)
@@ -222,14 +274,8 @@ def main():
     client.rpc("polygons_calc_berth_edges")
     print("Recalculated berth quay_length_m/perimeter_m/sides_count")
 
-    try:
-        client.rpc("exec_sql", {"sql": "refresh materialized view public.polygons_agg_country;"})
-        client.rpc("exec_sql", {"sql": "refresh materialized view public.polygons_agg_region;"})
-        print("Refreshed matviews polygons_agg_country / polygons_agg_region")
-    except RuntimeError:
-        print("No exec_sql RPC available - refresh matviews manually via Supabase SQL editor or MCP execute_sql:")
-        print("  refresh materialized view public.polygons_agg_country;")
-        print("  refresh materialized view public.polygons_agg_region;")
+    client.rpc("polygons_refresh_aggregates")
+    print("Refreshed matviews polygons_agg_country / polygons_agg_region")
 
 
 if __name__ == "__main__":
