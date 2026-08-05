@@ -71,9 +71,15 @@ export async function initMap(containerId) {
       })
       map.on('click', layerId, (e) => {
         const props = e.features[0].properties
+        const container = document.createElement('div')
+        const strong = document.createElement('strong')
+        strong.textContent = props.name
+        container.appendChild(strong)
+        container.appendChild(document.createElement('br'))
+        container.appendChild(document.createTextNode(`Area: ${Number(props.area_sqm).toLocaleString()} sqm`))
         new Popup()
           .setLngLat(e.lngLat)
-          .setHTML(`<strong>${props.name}</strong><br/>Area: ${Number(props.area_sqm).toLocaleString()} sqm`)
+          .setDOMContent(container)
           .addTo(map)
       })
     }
