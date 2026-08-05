@@ -41,6 +41,13 @@ drop materialized view if exists public.polygons_agg_region;
 -- Pre-aggregate each child table per port_code first, to avoid a cartesian
 -- fan-out when a port has multiple terminals AND multiple berths (joining
 -- both raw per-row tables into the same flat SELECT would multiply sums).
+-- Known, accepted limitation: driven from polygons_ports_master via left
+-- joins, so polygon rows (ports/terminals/berths) whose port_code has no
+-- matching polygons_ports_master row are silently excluded from these
+-- aggregates. As of the initial load this is 3 ports, 2 terminals, and 4
+-- berths (raw table counts 3657/11312/39170 vs. aggregate sums
+-- 3654/11310/39166). Redesigning the join to include orphans is out of
+-- scope; this is documentation of the gap only.
 create materialized view public.polygons_agg_country as
 with port_agg as (
   select port_code, count(*) as port_count, sum(area_sqm) as port_area_sqm
@@ -72,6 +79,9 @@ left join terminal_agg ta on ta.port_code = pm.port_id
 left join berth_agg ba on ba.port_code = pm.port_id
 group by pm.country;
 
+-- Known, accepted limitation: same left-join-from-ports_master gap as
+-- polygons_agg_country above (rows with no matching port master record are
+-- excluded from these aggregates). See that comment for details.
 create materialized view public.polygons_agg_region as
 with port_agg as (
   select port_code, count(*) as port_count, sum(area_sqm) as port_area_sqm
