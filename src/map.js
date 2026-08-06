@@ -134,8 +134,10 @@ export async function initMap(containerId) {
   const activeLevels = new Set(LEVELS)
   let currentScope = 'world'
   let currentValue = null
+  let refreshToken = 0
 
   async function refresh() {
+    const token = ++refreshToken
     await Promise.all(
       LEVELS.map(async (level) => {
         const sourceId = `polygons-${level}-source`
@@ -144,6 +146,9 @@ export async function initMap(containerId) {
         map.setLayoutProperty(`polygons-${level}-fill`, 'visibility', visibility)
         if (!activeLevels.has(level)) return
         const geojson = await fetchLevelGeoJson(level, currentScope, currentValue)
+        // A newer refresh() started while this fetch was in flight -- drop
+        // this stale result instead of clobbering the current view.
+        if (token !== refreshToken) return
         map.getSource(sourceId).setData(geojson)
       })
     )

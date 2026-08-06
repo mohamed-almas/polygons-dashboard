@@ -183,6 +183,12 @@ html, body, #app {
   border-bottom: 1px solid var(--border);
 }
 
+.relations-link {
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
 .relations-table td:first-child {
   color: var(--muted);
   width: 70px;

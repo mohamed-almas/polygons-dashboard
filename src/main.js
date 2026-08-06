@@ -70,12 +70,35 @@ async function bootstrap() {
     return { scope: 'world', value: null }
   }
 
+  // Filter changes can overlap (e.g. a slow world-scope fetch still in
+  // flight when the user picks a country). Each applyScope call gets a
+  // token; if a newer call started before this one finishes, this one
+  // drops its render instead of overwriting the UI with stale data.
+  let requestToken = 0
+
   async function applyScope() {
+    const token = ++requestToken
     const { scope, value } = currentScope()
     showLoading()
     await setScope(scope, value)
+    if (token !== requestToken) return
     await renderKpiCards(scope, value)
-    await renderPortRelations(scope === 'port' ? Number(value) : null)
+    if (token !== requestToken) return
+    await renderPortRelations(scope === 'port' ? Number(value) : null, selectPortById)
+  }
+
+  // Jump to an arbitrary port (e.g. from the parent/sub-port relations
+  // table), regardless of the currently selected region/country filters.
+  function selectPortById(portId) {
+    const row = portsMaster.find((p) => p.port_id === portId)
+    if (!row) return
+    regionSelect.value = row.region || ''
+    refreshCountryOptions()
+    countrySelect.value = row.country || ''
+    refreshPortOptions()
+    portSelect.value = String(portId)
+    zoomToCurrentScope()
+    applyScope().catch(showError)
   }
 
   function zoomToCurrentScope() {

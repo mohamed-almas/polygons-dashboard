@@ -9,6 +9,16 @@ export function formatCompact(n) {
   return num.toFixed(1)
 }
 
+// Area cards are sourced in sqkm; below 1.0 sqkm that rounds to "0.0", so
+// switch to sqm (1 sqkm = 1e6 sqm) for small scopes.
+export function formatArea(sqkm) {
+  const num = Number(sqkm)
+  if (isFinite(num) && Math.abs(num) < 1) {
+    return `${formatCompact(num * 1e6)} sqm`
+  }
+  return `${formatCompact(num)} sqkm`
+}
+
 // Polygon names in the source data are suffixed " Polygon" (e.g. "Berth 2
 // Polygon") -- strip it for display.
 export function cleanName(name) {
