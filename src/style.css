@@ -93,18 +93,19 @@ html, body, #app {
 .swatch-terminal { background: rgba(37, 99, 235, 0.5); border: 1px solid #2563eb; }
 .swatch-berth { background: rgba(220, 38, 38, 0.5); border: 1px solid #dc2626; }
 
-.legend {
-  display: flex;
-  gap: 14px;
-  align-items: center;
+#reset-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--ink);
+  font-size: 0.85rem;
+  cursor: pointer;
   height: 30px;
 }
 
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.85rem;
+#reset-btn:hover {
+  background: var(--bg);
 }
 
 #kpi-cards {
@@ -137,6 +138,12 @@ html, body, #app {
   margin-top: 2px;
 }
 
+#main-row {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
 #map-container {
   flex: 1;
   position: relative;
@@ -145,6 +152,53 @@ html, body, #app {
 #map {
   position: absolute;
   inset: 0;
+}
+
+#port-relations:empty {
+  display: none;
+}
+
+#port-relations {
+  width: 260px;
+  padding: 14px;
+  background: var(--card-bg);
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+}
+
+#port-relations h2 {
+  margin: 0 0 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.relations-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.relations-table td {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.relations-table td:first-child {
+  color: var(--muted);
+  width: 70px;
+}
+
+#footnote {
+  padding: 10px 20px;
+  background: var(--card-bg);
+  border-top: 1px solid var(--border);
+  font-size: 0.72rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+#footnote strong {
+  color: var(--ink);
 }
 
 .maplibregl-popup-content {

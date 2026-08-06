@@ -3,11 +3,13 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import { initMap } from './map.js'
 import { renderKpiCards } from './kpi.js'
 import { loadPortsMaster, distinctRegions, countriesInRegion, portsInCountry, bboxForRows } from './filters.js'
+import { renderPortRelations } from './relations.js'
 
 const kpiCards = document.getElementById('kpi-cards')
 const regionSelect = document.getElementById('region-select')
 const countrySelect = document.getElementById('country-select')
 const portSelect = document.getElementById('port-select')
+const resetBtn = document.getElementById('reset-btn')
 const levelToggles = [...document.querySelectorAll('#level-toggles input[type=checkbox]')]
 
 function showLoading() {
@@ -38,7 +40,7 @@ function populateSelect(select, options, placeholder) {
 async function bootstrap() {
   showLoading()
 
-  const [{ setScope, setActiveLevels, fitBounds }, portsMaster] = await Promise.all([
+  const [{ setScope, setActiveLevels, setActiveLevelsSync, fitBounds }, portsMaster] = await Promise.all([
     initMap('map'),
     loadPortsMaster(),
   ])
@@ -73,6 +75,7 @@ async function bootstrap() {
     showLoading()
     await setScope(scope, value)
     await renderKpiCards(scope, value)
+    await renderPortRelations(scope === 'port' ? Number(value) : null)
   }
 
   function zoomToCurrentScope() {
@@ -109,6 +112,18 @@ async function bootstrap() {
       const active = levelToggles.filter((t) => t.checked).map((t) => t.value)
       setActiveLevels(active).catch(showError)
     })
+  })
+
+  resetBtn.addEventListener('click', async () => {
+    regionSelect.value = ''
+    countrySelect.value = ''
+    portSelect.value = ''
+    levelToggles.forEach((t) => { t.checked = true })
+    refreshCountryOptions()
+    refreshPortOptions()
+    zoomToCurrentScope()
+    setActiveLevelsSync(levelToggles.map((t) => t.value))
+    await applyScope().catch(showError)
   })
 
   await applyScope()

@@ -13,20 +13,11 @@
 
       <div id="controls">
         <div class="control-group">
-          <label>Layers</label>
+          <label>Legend</label>
           <div id="level-toggles" class="level-toggles">
             <label class="level-toggle"><input type="checkbox" value="port" checked /><span class="swatch swatch-port"></span>Ports</label>
             <label class="level-toggle"><input type="checkbox" value="terminal" checked /><span class="swatch swatch-terminal"></span>Terminals</label>
             <label class="level-toggle"><input type="checkbox" value="berth" checked /><span class="swatch swatch-berth"></span>Berths</label>
-          </div>
-        </div>
-
-        <div class="control-group">
-          <label>Legend</label>
-          <div class="legend">
-            <span class="legend-item"><span class="swatch swatch-port"></span>Port</span>
-            <span class="legend-item"><span class="swatch swatch-terminal"></span>Terminal</span>
-            <span class="legend-item"><span class="swatch swatch-berth"></span>Berth</span>
           </div>
         </div>
 
@@ -44,13 +35,27 @@
           <label for="port-select">Port</label>
           <select id="port-select"><option value="">All ports</option></select>
         </div>
+
+        <div class="control-group">
+          <label>&nbsp;</label>
+          <button id="reset-btn" type="button">Reset filters</button>
+        </div>
       </div>
 
       <div id="kpi-cards"></div>
 
-      <div id="map-container">
-        <div id="map"></div>
+      <div id="main-row">
+        <div id="map-container">
+          <div id="map"></div>
+        </div>
+        <aside id="port-relations"></aside>
       </div>
+
+      <footer id="footnote">
+        <strong>Designated Port Area:</strong> total area of polygons drawn for the port itself (excludes terminal and berth polygons).
+        <strong>Physical Port Area:</strong> total terminal area plus berth area (berth-type polygons only).
+        <strong>Harbor Area / Port Limits:</strong> total terminal area plus all berth-type polygons (anchorages, moorings, etc. included).
+      </footer>
     </div>
     <script type="module" src="/src/main.js"></script>
   </body>

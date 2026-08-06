@@ -161,6 +161,19 @@ export async function initMap(containerId) {
     await refresh()
   }
 
+  // Same as setActiveLevels but skips the data fetch -- for callers (like a
+  // reset button) that are about to call setScope right after anyway, so a
+  // second full refresh() would just double the network work.
+  function setActiveLevelsSync(levels) {
+    activeLevels.clear()
+    for (const l of levels) activeLevels.add(l)
+    for (const level of LEVELS) {
+      const visibility = activeLevels.has(level) ? 'visible' : 'none'
+      map.setLayoutProperty(`polygons-${level}-line`, 'visibility', visibility)
+      map.setLayoutProperty(`polygons-${level}-fill`, 'visibility', visibility)
+    }
+  }
+
   function fitBounds(bbox) {
     if (!bbox) {
       map.flyTo({ center: [10, 20], zoom: 1.5 })
@@ -174,5 +187,5 @@ export async function initMap(containerId) {
     }
   }
 
-  return { map, setScope, setActiveLevels, fitBounds }
+  return { map, setScope, setActiveLevels, setActiveLevelsSync, fitBounds }
 }
