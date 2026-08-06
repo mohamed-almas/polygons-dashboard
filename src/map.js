@@ -134,6 +134,7 @@ export async function initMap(containerId) {
   const activeLevels = new Set(LEVELS)
   let currentScope = 'world'
   let currentValue = null
+  let extraPortIds = []
   let refreshToken = 0
 
   async function refresh() {
@@ -145,11 +146,25 @@ export async function initMap(containerId) {
         map.setLayoutProperty(`polygons-${level}-line`, 'visibility', visibility)
         map.setLayoutProperty(`polygons-${level}-fill`, 'visibility', visibility)
         if (!activeLevels.has(level)) return
-        const geojson = await fetchLevelGeoJson(level, currentScope, currentValue)
-        // A newer refresh() started while this fetch was in flight -- drop
-        // this stale result instead of clobbering the current view.
+
+        const [primary, ...extras] = await Promise.all([
+          fetchLevelGeoJson(level, currentScope, currentValue),
+          ...extraPortIds.map((id) => fetchLevelGeoJson(level, 'port', String(id))),
+        ])
+        // A newer refresh() started while these fetches were in flight --
+        // drop this stale result instead of clobbering the current view.
         if (token !== refreshToken) return
-        map.getSource(sourceId).setData(geojson)
+
+        const seen = new Set(primary.features.map((f) => f.properties.id))
+        const features = primary.features.slice()
+        for (const extra of extras) {
+          for (const f of extra.features) {
+            if (seen.has(f.properties.id)) continue
+            seen.add(f.properties.id)
+            features.push(f)
+          }
+        }
+        map.getSource(sourceId).setData({ type: 'FeatureCollection', features })
       })
     )
   }
@@ -157,6 +172,13 @@ export async function initMap(containerId) {
   async function setScope(scope, value) {
     currentScope = scope
     currentValue = value
+    await refresh()
+  }
+
+  // Overlay one or more extra ports' polygons on top of the current scope
+  // (e.g. a related parent/sub-port checked in the relations table).
+  async function setExtraPorts(portIds) {
+    extraPortIds = portIds
     await refresh()
   }
 
@@ -192,5 +214,5 @@ export async function initMap(containerId) {
     }
   }
 
-  return { map, setScope, setActiveLevels, setActiveLevelsSync, fitBounds }
+  return { map, setScope, setActiveLevels, setActiveLevelsSync, setExtraPorts, fitBounds }
 }

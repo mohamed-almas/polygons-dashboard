@@ -189,6 +189,11 @@ html, body, #app {
   text-decoration: underline;
 }
 
+.relations-table td:last-child {
+  width: 20px;
+  text-align: right;
+}
+
 .relations-table td:first-child {
   color: var(--muted);
   width: 70px;

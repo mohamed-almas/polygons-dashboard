@@ -3,7 +3,7 @@ import { supabase } from './supabaseClient.js'
 // Ports carry an optional parent_port_code/parent_port on their own polygon
 // row (set by the provider for satellite/sub-ports). A port's children are
 // simply other ports whose parent_port_code points back at it.
-export async function renderPortRelations(portId, onSelectPort) {
+export async function renderPortRelations(portId, onSelectPort, onToggleRelated) {
   const container = document.getElementById('port-relations')
   if (!portId) {
     container.innerHTML = ''
@@ -39,7 +39,15 @@ export async function renderPortRelations(portId, onSelectPort) {
       td2.className = 'relations-link'
       td2.addEventListener('click', () => onSelectPort(code))
     }
-    tr.append(td1, td2)
+    const td3 = document.createElement('td')
+    if (onToggleRelated) {
+      const checkbox = document.createElement('input')
+      checkbox.type = 'checkbox'
+      checkbox.title = 'Show this port\'s polygons on the map too'
+      checkbox.addEventListener('change', () => onToggleRelated(code, checkbox.checked))
+      td3.appendChild(checkbox)
+    }
+    tr.append(td1, td2, td3)
     table.appendChild(tr)
   }
 

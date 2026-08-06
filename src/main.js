@@ -40,7 +40,7 @@ function populateSelect(select, options, placeholder) {
 async function bootstrap() {
   showLoading()
 
-  const [{ setScope, setActiveLevels, setActiveLevelsSync, fitBounds }, portsMaster] = await Promise.all([
+  const [{ setScope, setActiveLevels, setActiveLevelsSync, setExtraPorts, fitBounds }, portsMaster] = await Promise.all([
     initMap('map'),
     loadPortsMaster(),
   ])
@@ -75,16 +75,27 @@ async function bootstrap() {
   // token; if a newer call started before this one finishes, this one
   // drops its render instead of overwriting the UI with stale data.
   let requestToken = 0
+  let extraPortIds = new Set()
 
   async function applyScope() {
     const token = ++requestToken
     const { scope, value } = currentScope()
     showLoading()
+    extraPortIds = new Set()
+    await setExtraPorts([])
     await setScope(scope, value)
     if (token !== requestToken) return
     await renderKpiCards(scope, value)
     if (token !== requestToken) return
-    await renderPortRelations(scope === 'port' ? Number(value) : null, selectPortById)
+    await renderPortRelations(scope === 'port' ? Number(value) : null, selectPortById, toggleRelatedPort)
+  }
+
+  // A checked related-port row overlays that port's polygons on the map on
+  // top of the current scope, without changing the KPI cards or filters.
+  function toggleRelatedPort(portId, checked) {
+    if (checked) extraPortIds.add(portId)
+    else extraPortIds.delete(portId)
+    setExtraPorts([...extraPortIds]).catch(showError)
   }
 
   // Jump to an arbitrary port (e.g. from the parent/sub-port relations
