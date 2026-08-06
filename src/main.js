@@ -1,19 +1,28 @@
 import './style.css'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import { initMap } from './map.js'
+import { initMap, CARGO_TYPE_COLOR } from './map.js'
 import { renderKpiCards } from './kpi.js'
 import { loadPortsMaster, distinctRegions, countriesInRegion, portsInCountry, bboxForRows } from './filters.js'
 import { renderPortRelations } from './relations.js'
+
+const CARGO_SWATCH_CLASS = {
+  Bulk: 'swatch-cargo-bulk',
+  Container: 'swatch-cargo-container',
+  Multipurpose: 'swatch-cargo-multipurpose',
+  'Ro-Ro': 'swatch-cargo-roro',
+  Shipyard: 'swatch-cargo-shipyard',
+  Tanker: 'swatch-cargo-tanker',
+}
+const CARGO_TYPES = Object.keys(CARGO_TYPE_COLOR)
 
 const kpiCards = document.getElementById('kpi-cards')
 const regionSelect = document.getElementById('region-select')
 const countrySelect = document.getElementById('country-select')
 const portSelect = document.getElementById('port-select')
 const cargoTypeSelect = document.getElementById('cargo-type-select')
-const colorModeSelect = document.getElementById('color-mode-select')
-const cargoLegend = document.getElementById('cargo-legend')
+const legendSelect = document.getElementById('legend-select')
+const legendItems = document.getElementById('legend-items')
 const resetBtn = document.getElementById('reset-btn')
-const levelToggles = [...document.querySelectorAll('#level-toggles input[type=checkbox]')]
 
 function showLoading() {
   kpiCards.textContent = 'Loading...'
@@ -43,10 +52,10 @@ function populateSelect(select, options, placeholder) {
 async function bootstrap() {
   showLoading()
 
-  const [{ setScope, setActiveLevels, setActiveLevelsSync, setExtraPorts, setExtraPortsSync, setCargoType, setCargoTypeSync, setColorMode, fitBounds }, portsMaster] = await Promise.all([
-    initMap('map'),
-    loadPortsMaster(),
-  ])
+  const [
+    { setScope, setActiveLevels, setActiveLevelsSync, setExtraPorts, setExtraPortsSync, setCargoType, setCargoTypeSync, setColorMode, setCargoTypeVisibility, fitBounds },
+    portsMaster,
+  ] = await Promise.all([initMap('map'), loadPortsMaster()])
 
   function refreshCountryOptions() {
     const region = regionSelect.value
@@ -72,6 +81,66 @@ async function bootstrap() {
     if (regionSelect.value) return { scope: 'region', value: regionSelect.value }
     return { scope: 'world', value: null }
   }
+
+  // Legend/layer-visibility state. In 'level' mode a single Terminals
+  // checkbox controls the whole terminal layer; in 'cargo' mode that's
+  // replaced by 6 per-cargo-type checkboxes (terminal layer is active if
+  // any of them are checked), while port/berth stay simple toggles either way.
+  let portChecked = true
+  let terminalChecked = true
+  let berthChecked = true
+  let cargoVisible = new Set(CARGO_TYPES)
+
+  function applyLegendState() {
+    const levels = []
+    if (portChecked) levels.push('port')
+    const terminalActive = legendSelect.value === 'cargo' ? cargoVisible.size > 0 : terminalChecked
+    if (terminalActive) levels.push('terminal')
+    if (berthChecked) levels.push('berth')
+    setActiveLevels(levels).catch(showError)
+    setCargoTypeVisibility(legendSelect.value === 'cargo' ? [...cargoVisible] : CARGO_TYPES)
+  }
+
+  function addLegendItem(label, swatchClass, checked, onChange) {
+    const el = document.createElement('label')
+    el.className = 'level-toggle'
+    const checkbox = document.createElement('input')
+    checkbox.type = 'checkbox'
+    checkbox.checked = checked
+    checkbox.addEventListener('change', () => onChange(checkbox.checked))
+    const swatch = document.createElement('span')
+    swatch.className = `swatch ${swatchClass}`
+    el.append(checkbox, swatch, document.createTextNode(label))
+    legendItems.appendChild(el)
+  }
+
+  function renderLegend() {
+    legendItems.innerHTML = ''
+    addLegendItem('Ports', 'swatch-port', portChecked, (checked) => {
+      portChecked = checked
+      applyLegendState()
+    })
+    if (legendSelect.value === 'cargo') {
+      for (const type of CARGO_TYPES) {
+        addLegendItem(type, CARGO_SWATCH_CLASS[type], cargoVisible.has(type), (checked) => {
+          if (checked) cargoVisible.add(type)
+          else cargoVisible.delete(type)
+          applyLegendState()
+        })
+      }
+    } else {
+      addLegendItem('Terminals', 'swatch-terminal', terminalChecked, (checked) => {
+        terminalChecked = checked
+        applyLegendState()
+      })
+    }
+    addLegendItem('Berths', 'swatch-berth', berthChecked, (checked) => {
+      berthChecked = checked
+      applyLegendState()
+    })
+  }
+
+  renderLegend()
 
   // Filter changes can overlap (e.g. a slow world-scope fetch still in
   // flight when the user picks a country). Each applyScope call gets a
@@ -156,20 +225,10 @@ async function bootstrap() {
     await applyScope().catch(showError)
   })
 
-  levelToggles.forEach((toggle) => {
-    toggle.addEventListener('change', () => {
-      const active = levelToggles.filter((t) => t.checked).map((t) => t.value)
-      setActiveLevels(active).catch(showError)
-    })
-  })
-
-  colorModeSelect.addEventListener('change', () => {
-    // level-toggles stays visible either way -- it's also the layer
-    // checkboxes, not just a legend. Cargo-legend is an extra row shown
-    // alongside it in cargo mode (terminal's own swatch there goes stale,
-    // but the checkbox itself must stay usable).
-    setColorMode(colorModeSelect.value)
-    cargoLegend.hidden = colorModeSelect.value !== 'cargo'
+  legendSelect.addEventListener('change', () => {
+    setColorMode(legendSelect.value)
+    renderLegend()
+    applyLegendState()
   })
 
   cargoTypeSelect.addEventListener('change', async () => {
@@ -183,12 +242,21 @@ async function bootstrap() {
     countrySelect.value = ''
     portSelect.value = ''
     cargoTypeSelect.value = ''
-    levelToggles.forEach((t) => { t.checked = true })
     refreshCountryOptions()
     refreshPortOptions()
     zoomToCurrentScope()
-    setActiveLevelsSync(levelToggles.map((t) => t.value))
+
+    legendSelect.value = 'level'
+    setColorMode('level')
+    portChecked = true
+    terminalChecked = true
+    berthChecked = true
+    cargoVisible = new Set(CARGO_TYPES)
+    renderLegend()
+    setActiveLevelsSync(['port', 'terminal', 'berth'])
+    setCargoTypeVisibility(CARGO_TYPES)
     setCargoTypeSync('')
+
     await applyScope().catch(showError)
   })
 

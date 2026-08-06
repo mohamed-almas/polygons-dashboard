@@ -146,6 +146,8 @@ export async function initMap(containerId) {
     zoom: 1.5,
   })
 
+  map.addControl(new maplibregl.FullscreenControl())
+
   await new Promise((resolve) => map.on('load', resolve))
 
   for (const level of LEVELS) addLevelLayers(map, level)
@@ -264,6 +266,16 @@ export async function initMap(containerId) {
     }
   }
 
+  // For the Cargo Type legend's per-type checkmarks: hide terminal features
+  // whose terminal_type isn't in the given list. All 6 checked (or an empty
+  // "no filter" call) clears the filter entirely.
+  function setCargoTypeVisibility(types) {
+    const allTypes = Object.keys(CARGO_TYPE_COLOR)
+    const filter = types.length >= allTypes.length ? null : ['in', ['get', 'terminal_type'], ['literal', types]]
+    map.setFilter('polygons-terminal-fill', filter)
+    map.setFilter('polygons-terminal-line', filter)
+  }
+
   function fitBounds(bbox) {
     if (!bbox) {
       map.flyTo({ center: [10, 20], zoom: 1.5 })
@@ -277,5 +289,5 @@ export async function initMap(containerId) {
     }
   }
 
-  return { map, setScope, setActiveLevels, setActiveLevelsSync, setExtraPorts, setExtraPortsSync, setCargoType, setCargoTypeSync, setColorMode, fitBounds }
+  return { map, setScope, setActiveLevels, setActiveLevelsSync, setExtraPorts, setExtraPortsSync, setCargoType, setCargoTypeSync, setColorMode, setCargoTypeVisibility, fitBounds }
 }

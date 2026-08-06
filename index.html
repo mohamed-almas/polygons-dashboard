@@ -9,33 +9,6 @@
     <div id="app">
       <header id="topbar">
         <h1>Port Terminal &amp; Berth Polygons</h1>
-      </header>
-
-      <div id="controls">
-        <div class="control-group">
-          <label>Legend</label>
-          <div id="level-toggles" class="level-toggles">
-            <label class="level-toggle"><input type="checkbox" value="port" checked /><span class="swatch swatch-port"></span>Ports</label>
-            <label class="level-toggle"><input type="checkbox" value="terminal" checked /><span class="swatch swatch-terminal"></span>Terminals</label>
-            <label class="level-toggle"><input type="checkbox" value="berth" checked /><span class="swatch swatch-berth"></span>Berths</label>
-          </div>
-          <div id="cargo-legend" class="level-toggles cargo-legend" hidden>
-            <span class="level-toggle"><span class="swatch swatch-cargo-bulk"></span>Bulk</span>
-            <span class="level-toggle"><span class="swatch swatch-cargo-container"></span>Container</span>
-            <span class="level-toggle"><span class="swatch swatch-cargo-multipurpose"></span>Multipurpose</span>
-            <span class="level-toggle"><span class="swatch swatch-cargo-roro"></span>Ro-Ro</span>
-            <span class="level-toggle"><span class="swatch swatch-cargo-shipyard"></span>Shipyard</span>
-            <span class="level-toggle"><span class="swatch swatch-cargo-tanker"></span>Tanker</span>
-          </div>
-        </div>
-
-        <div class="control-group">
-          <label for="color-mode-select">Terminal Colors</label>
-          <select id="color-mode-select">
-            <option value="level">By Level</option>
-            <option value="cargo">By Cargo Type</option>
-          </select>
-        </div>
 
         <div class="control-group">
           <label for="region-select">Region</label>
@@ -69,11 +42,21 @@
           <label>&nbsp;</label>
           <button id="reset-btn" type="button">Reset filters</button>
         </div>
+      </header>
+
+      <div id="legend-row">
+        <div class="control-group">
+          <label for="legend-select">Legend Type</label>
+          <select id="legend-select">
+            <option value="level">By Level</option>
+            <option value="cargo">By Cargo Type</option>
+          </select>
+        </div>
+        <div id="legend-items" class="level-toggles"></div>
       </div>
 
-      <div id="kpi-cards"></div>
-
       <div id="main-row">
+        <div id="kpi-cards"></div>
         <div id="map-container">
           <div id="map"></div>
         </div>
@@ -83,7 +66,7 @@
       <footer id="footnote">
         <strong>Designated Port Area:</strong> total area of polygons drawn for the port itself (excludes terminal and berth polygons).
         <strong>Physical Port Area:</strong> total terminal area plus berth area (berth-type polygons only).
-        <strong>Harbor Area / Port Limits:</strong> total terminal area plus all berth-type polygons (anchorages, moorings, etc. included).
+        <strong>Port Limits / Harbor Area:</strong> total terminal area plus all berth-type polygons (anchorages, moorings, etc. included).
       </footer>
     </div>
     <script type="module" src="/src/main.js"></script>
