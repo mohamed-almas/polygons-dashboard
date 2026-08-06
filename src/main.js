@@ -9,6 +9,7 @@ const kpiCards = document.getElementById('kpi-cards')
 const regionSelect = document.getElementById('region-select')
 const countrySelect = document.getElementById('country-select')
 const portSelect = document.getElementById('port-select')
+const cargoTypeSelect = document.getElementById('cargo-type-select')
 const resetBtn = document.getElementById('reset-btn')
 const levelToggles = [...document.querySelectorAll('#level-toggles input[type=checkbox]')]
 
@@ -40,7 +41,7 @@ function populateSelect(select, options, placeholder) {
 async function bootstrap() {
   showLoading()
 
-  const [{ setScope, setActiveLevels, setActiveLevelsSync, setExtraPorts, fitBounds }, portsMaster] = await Promise.all([
+  const [{ setScope, setActiveLevels, setActiveLevelsSync, setExtraPorts, setExtraPortsSync, setCargoType, setCargoTypeSync, fitBounds }, portsMaster] = await Promise.all([
     initMap('map'),
     loadPortsMaster(),
   ])
@@ -82,7 +83,7 @@ async function bootstrap() {
     const { scope, value } = currentScope()
     showLoading()
     extraPortIds = new Set()
-    await setExtraPorts([])
+    setExtraPortsSync([])
     await setScope(scope, value)
     if (token !== requestToken) return
     await renderKpiCards(scope, value)
@@ -148,15 +149,21 @@ async function bootstrap() {
     })
   })
 
+  cargoTypeSelect.addEventListener('change', () => {
+    setCargoType(cargoTypeSelect.value).catch(showError)
+  })
+
   resetBtn.addEventListener('click', async () => {
     regionSelect.value = ''
     countrySelect.value = ''
     portSelect.value = ''
+    cargoTypeSelect.value = ''
     levelToggles.forEach((t) => { t.checked = true })
     refreshCountryOptions()
     refreshPortOptions()
     zoomToCurrentScope()
     setActiveLevelsSync(levelToggles.map((t) => t.value))
+    setCargoTypeSync('')
     await applyScope().catch(showError)
   })
 

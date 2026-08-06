@@ -36,13 +36,6 @@ export async function renderPortRelations(portId, onSelectPort, onToggleRelated)
 
   container.innerHTML = ''
 
-  if (isSubPorts) {
-    const kpi = document.createElement('div')
-    kpi.className = 'relations-kpi'
-    kpi.innerHTML = `<div class="kpi-value">${uniqueChildren.length}</div><div class="kpi-label">Sub-Ports</div>`
-    container.appendChild(kpi)
-  }
-
   const body = document.createElement('div')
   body.className = 'relations-body'
 
@@ -97,4 +90,11 @@ export async function renderPortRelations(portId, onSelectPort, onToggleRelated)
 
   body.appendChild(table)
   container.appendChild(body)
+
+  if (isSubPorts) {
+    const kpi = document.createElement('div')
+    kpi.className = 'relations-kpi'
+    kpi.innerHTML = `<div class="kpi-value">${uniqueChildren.length}</div><div class="kpi-label">Sub-Ports</div>`
+    container.appendChild(kpi)
+  }
 }

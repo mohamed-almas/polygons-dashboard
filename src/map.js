@@ -23,10 +23,12 @@ const LEVELS = ['port', 'terminal', 'berth']
 // Light, borders-only basemap with no graticule/lat-lon lines.
 const BASEMAP_STYLE = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
 
-async function fetchLevelGeoJson(level, scope, value) {
+async function fetchLevelGeoJson(level, scope, value, cargoType) {
   // These RPCs return a single aggregated `json` array (not a SETOF row
   // set), so there's no PostgREST row cap to page around -- one call.
-  const { data, error } = await supabase.rpc(RPC_NAME[level], { p_scope: scope, p_value: value })
+  const params = { p_scope: scope, p_value: value }
+  if (level === 'terminal') params.p_cargo_type = cargoType || null
+  const { data, error } = await supabase.rpc(RPC_NAME[level], params)
   if (error) throw error
   const rows = data || []
   return {
@@ -39,6 +41,8 @@ async function fetchLevelGeoJson(level, scope, value) {
         name: row.polygon_name,
         port_name: row.port_name,
         terminal_name: row.terminal_name ?? null,
+        terminal_type: row.terminal_type ?? null,
+        berth_type: row.berth_type ?? null,
         level,
       },
       geometry: JSON.parse(row.geom_json),
@@ -54,10 +58,13 @@ function tooltipContent(props) {
   } else if (props.level === 'terminal') {
     lines.push(`Port: ${props.port_name}`)
     lines.push(cleanName(props.name))
+    lines.push(`Cargo Type: ${props.terminal_type || 'Unknown'}`)
   } else {
     lines.push(`Port: ${props.port_name}`)
     if (props.terminal_name) lines.push(`Terminal: ${cleanName(props.terminal_name)}`)
     lines.push(cleanName(props.name))
+    lines.push(`Berth Type: ${props.berth_type || 'Unknown'}`)
+    if (props.terminal_name) lines.push(`Cargo Type: ${props.terminal_type || 'Unknown'}`)
   }
   lines.forEach((line, i) => {
     const el = document.createElement(i === 0 ? 'strong' : 'div')
@@ -127,6 +134,7 @@ export async function initMap(containerId) {
   const activeLevels = new Set(LEVELS)
   let currentScope = 'world'
   let currentValue = null
+  let currentCargoType = null
   let extraPortIds = []
   let refreshToken = 0
 
@@ -141,8 +149,8 @@ export async function initMap(containerId) {
         if (!activeLevels.has(level)) return
 
         const [primary, ...extras] = await Promise.all([
-          fetchLevelGeoJson(level, currentScope, currentValue),
-          ...extraPortIds.map((id) => fetchLevelGeoJson(level, 'port', String(id))),
+          fetchLevelGeoJson(level, currentScope, currentValue, currentCargoType),
+          ...extraPortIds.map((id) => fetchLevelGeoJson(level, 'port', String(id), currentCargoType)),
         ])
         // A newer refresh() started while these fetches were in flight --
         // drop this stale result instead of clobbering the current view.
@@ -168,11 +176,28 @@ export async function initMap(containerId) {
     await refresh()
   }
 
+  async function setCargoType(cargoType) {
+    currentCargoType = cargoType
+    await refresh()
+  }
+
+  // Same as setCargoType but skips the fetch -- for the reset button, which
+  // calls setScope right after anyway.
+  function setCargoTypeSync(cargoType) {
+    currentCargoType = cargoType
+  }
+
   // Overlay one or more extra ports' polygons on top of the current scope
   // (e.g. a related parent/sub-port checked in the relations table).
   async function setExtraPorts(portIds) {
     extraPortIds = portIds
     await refresh()
+  }
+
+  // Same as setExtraPorts but skips the fetch -- for applyScope's own
+  // scope-change path, which calls setScope right after anyway.
+  function setExtraPortsSync(portIds) {
+    extraPortIds = portIds
   }
 
   async function setActiveLevels(levels) {
@@ -207,5 +232,5 @@ export async function initMap(containerId) {
     }
   }
 
-  return { map, setScope, setActiveLevels, setActiveLevelsSync, setExtraPorts, fitBounds }
+  return { map, setScope, setActiveLevels, setActiveLevelsSync, setExtraPorts, setExtraPortsSync, setCargoType, setCargoTypeSync, fitBounds }
 }
