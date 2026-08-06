@@ -24,21 +24,14 @@ const LEVELS = ['port', 'terminal', 'berth']
 const BASEMAP_STYLE = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
 
 async function fetchLevelGeoJson(level, scope, value) {
-  const pageSize = 1000
-  let allRows = []
-  let from = 0
-  while (true) {
-    const { data, error } = await supabase
-      .rpc(RPC_NAME[level], { p_scope: scope, p_value: value })
-      .range(from, from + pageSize - 1)
-    if (error) throw error
-    allRows = allRows.concat(data)
-    if (data.length < pageSize) break
-    from += pageSize
-  }
+  // These RPCs return a single aggregated `json` array (not a SETOF row
+  // set), so there's no PostgREST row cap to page around -- one call.
+  const { data, error } = await supabase.rpc(RPC_NAME[level], { p_scope: scope, p_value: value })
+  if (error) throw error
+  const rows = data || []
   return {
     type: 'FeatureCollection',
-    features: allRows.map((row) => ({
+    features: rows.map((row) => ({
       type: 'Feature',
       properties: {
         id: row.id,
