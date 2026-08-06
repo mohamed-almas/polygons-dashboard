@@ -159,11 +159,24 @@ html, body, #app {
 }
 
 #port-relations {
-  width: 260px;
+  width: 420px;
+  flex-shrink: 0;
   padding: 14px;
   background: var(--card-bg);
   border-left: 1px solid var(--border);
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.relations-kpi {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 18px;
+  text-align: center;
+  align-self: flex-start;
 }
 
 #port-relations h2 {
@@ -175,12 +188,21 @@ html, body, #app {
 .relations-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
+}
+
+.relations-table th {
+  text-align: left;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+  padding: 4px 6px 6px 0;
 }
 
 .relations-table td {
-  padding: 4px 0;
-  border-bottom: 1px solid var(--border);
+  padding: 5px 6px 5px 0;
 }
 
 .relations-link {
@@ -189,14 +211,31 @@ html, body, #app {
   text-decoration: underline;
 }
 
-.relations-table td:last-child {
+.relations-table td:first-child,
+.relations-table th:first-child {
   width: 20px;
-  text-align: right;
 }
 
-.relations-table td:first-child {
-  color: var(--muted);
-  width: 70px;
+/* Below ~900px there isn't room for a 420px sidebar next to the map --
+   drop it below the map instead, with the KPI card beside the table
+   rather than stacked above it. */
+@media (max-width: 900px) {
+  #main-row {
+    flex-direction: column;
+  }
+
+  #port-relations {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .relations-body {
+    flex: 1;
+    min-width: 0;
+  }
 }
 
 #footnote {

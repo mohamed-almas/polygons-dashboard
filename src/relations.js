@@ -1,8 +1,10 @@
 import { supabase } from './supabaseClient.js'
+import { formatCompact, formatArea } from './format.js'
 
 // Ports carry an optional parent_port_code/parent_port on their own polygon
 // row (set by the provider for satellite/sub-ports). A port's children are
-// simply other ports whose parent_port_code points back at it.
+// simply other ports whose parent_port_code points back at it. If both
+// exist (rare) children take priority -- "Sub-Ports" is the more useful view.
 export async function renderPortRelations(portId, onSelectPort, onToggleRelated) {
   const container = document.getElementById('port-relations')
   if (!portId) {
@@ -25,34 +27,74 @@ export async function renderPortRelations(portId, onSelectPort, onToggleRelated)
     return
   }
 
-  container.innerHTML = '<h2>Related ports</h2>'
+  const isSubPorts = uniqueChildren.length > 0
+  const rows = isSubPorts ? uniqueChildren : [{ port_code: parent.parent_port_code, port: parent.parent_port }]
+
+  const stats = await Promise.all(
+    rows.map((r) => supabase.rpc('polygons_kpis', { p_scope: 'port', p_value: String(r.port_code) }).single())
+  )
+
+  container.innerHTML = ''
+
+  if (isSubPorts) {
+    const kpi = document.createElement('div')
+    kpi.className = 'relations-kpi'
+    kpi.innerHTML = `<div class="kpi-value">${uniqueChildren.length}</div><div class="kpi-label">Sub-Ports</div>`
+    container.appendChild(kpi)
+  }
+
+  const body = document.createElement('div')
+  body.className = 'relations-body'
+
+  const h2 = document.createElement('h2')
+  h2.textContent = isSubPorts ? 'Sub-Ports' : 'Parent'
+  body.appendChild(h2)
+
   const table = document.createElement('table')
   table.className = 'relations-table'
+  const thead = document.createElement('tr')
+  for (const label of ['', 'Port Name', 'Terminals', 'Berths', 'Physical Port Area', 'Harbor Area / Port Limits', 'Quay Length (m)']) {
+    const th = document.createElement('th')
+    th.textContent = label
+    thead.appendChild(th)
+  }
+  table.appendChild(thead)
 
-  function addRow(label, name, code) {
+  rows.forEach((r, i) => {
+    const { data } = stats[i]
     const tr = document.createElement('tr')
-    const td1 = document.createElement('td')
-    td1.textContent = label
-    const td2 = document.createElement('td')
-    td2.textContent = name
-    if (onSelectPort) {
-      td2.className = 'relations-link'
-      td2.addEventListener('click', () => onSelectPort(code))
-    }
-    const td3 = document.createElement('td')
+
+    const tdCheck = document.createElement('td')
     if (onToggleRelated) {
       const checkbox = document.createElement('input')
       checkbox.type = 'checkbox'
       checkbox.title = 'Show this port\'s polygons on the map too'
-      checkbox.addEventListener('change', () => onToggleRelated(code, checkbox.checked))
-      td3.appendChild(checkbox)
+      checkbox.addEventListener('change', () => onToggleRelated(r.port_code, checkbox.checked))
+      tdCheck.appendChild(checkbox)
     }
-    tr.append(td1, td2, td3)
+
+    const tdName = document.createElement('td')
+    tdName.textContent = r.port
+    if (onSelectPort) {
+      tdName.className = 'relations-link'
+      tdName.addEventListener('click', () => onSelectPort(r.port_code))
+    }
+
+    const tdTerminals = document.createElement('td')
+    tdTerminals.textContent = data ? formatCompact(data.terminal_count) : '-'
+    const tdBerths = document.createElement('td')
+    tdBerths.textContent = data ? formatCompact(data.berth_count) : '-'
+    const tdPhysical = document.createElement('td')
+    tdPhysical.textContent = data ? formatArea(data.physical_area_sqm) : '-'
+    const tdHarbor = document.createElement('td')
+    tdHarbor.textContent = data ? formatArea(data.estimated_area_sqm) : '-'
+    const tdQuay = document.createElement('td')
+    tdQuay.textContent = data ? formatCompact(data.quay_length_m) : '-'
+
+    tr.append(tdCheck, tdName, tdTerminals, tdBerths, tdPhysical, tdHarbor, tdQuay)
     table.appendChild(tr)
-  }
+  })
 
-  if (parent) addRow('Parent', parent.parent_port, parent.parent_port_code)
-  for (const c of uniqueChildren) addRow('Sub-port', c.port, c.port_code)
-
-  container.appendChild(table)
+  body.appendChild(table)
+  container.appendChild(body)
 }
