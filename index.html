@@ -19,6 +19,22 @@
             <label class="level-toggle"><input type="checkbox" value="terminal" checked /><span class="swatch swatch-terminal"></span>Terminals</label>
             <label class="level-toggle"><input type="checkbox" value="berth" checked /><span class="swatch swatch-berth"></span>Berths</label>
           </div>
+          <div id="cargo-legend" class="level-toggles cargo-legend" hidden>
+            <span class="level-toggle"><span class="swatch swatch-cargo-bulk"></span>Bulk</span>
+            <span class="level-toggle"><span class="swatch swatch-cargo-container"></span>Container</span>
+            <span class="level-toggle"><span class="swatch swatch-cargo-multipurpose"></span>Multipurpose</span>
+            <span class="level-toggle"><span class="swatch swatch-cargo-roro"></span>Ro-Ro</span>
+            <span class="level-toggle"><span class="swatch swatch-cargo-shipyard"></span>Shipyard</span>
+            <span class="level-toggle"><span class="swatch swatch-cargo-tanker"></span>Tanker</span>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label for="color-mode-select">Terminal Colors</label>
+          <select id="color-mode-select">
+            <option value="level">By Level</option>
+            <option value="cargo">By Cargo Type</option>
+          </select>
         </div>
 
         <div class="control-group">

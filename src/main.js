@@ -10,6 +10,8 @@ const regionSelect = document.getElementById('region-select')
 const countrySelect = document.getElementById('country-select')
 const portSelect = document.getElementById('port-select')
 const cargoTypeSelect = document.getElementById('cargo-type-select')
+const colorModeSelect = document.getElementById('color-mode-select')
+const cargoLegend = document.getElementById('cargo-legend')
 const resetBtn = document.getElementById('reset-btn')
 const levelToggles = [...document.querySelectorAll('#level-toggles input[type=checkbox]')]
 
@@ -41,7 +43,7 @@ function populateSelect(select, options, placeholder) {
 async function bootstrap() {
   showLoading()
 
-  const [{ setScope, setActiveLevels, setActiveLevelsSync, setExtraPorts, setExtraPortsSync, setCargoType, setCargoTypeSync, fitBounds }, portsMaster] = await Promise.all([
+  const [{ setScope, setActiveLevels, setActiveLevelsSync, setExtraPorts, setExtraPortsSync, setCargoType, setCargoTypeSync, setColorMode, fitBounds }, portsMaster] = await Promise.all([
     initMap('map'),
     loadPortsMaster(),
   ])
@@ -159,6 +161,15 @@ async function bootstrap() {
       const active = levelToggles.filter((t) => t.checked).map((t) => t.value)
       setActiveLevels(active).catch(showError)
     })
+  })
+
+  colorModeSelect.addEventListener('change', () => {
+    // level-toggles stays visible either way -- it's also the layer
+    // checkboxes, not just a legend. Cargo-legend is an extra row shown
+    // alongside it in cargo mode (terminal's own swatch there goes stale,
+    // but the checkbox itself must stay usable).
+    setColorMode(colorModeSelect.value)
+    cargoLegend.hidden = colorModeSelect.value !== 'cargo'
   })
 
   cargoTypeSelect.addEventListener('change', async () => {

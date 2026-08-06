@@ -17,6 +17,25 @@ export const LEVEL_STYLE = {
   berth: { line: '#dc2626', fill: '#dc2626', fillOpacity: 0.35, lineWidth: 1.5 },
 }
 
+// Terminal colors when coloring by cargo type instead of by level. Port and
+// berth colors stay the same in both modes.
+export const CARGO_TYPE_COLOR = {
+  Bulk: '#f59e0b',
+  Container: '#10b981',
+  Multipurpose: '#8b5cf6',
+  'Ro-Ro': '#ec4899',
+  Shipyard: '#0891b2',
+  Tanker: '#f97316',
+}
+const CARGO_TYPE_DEFAULT_COLOR = '#94a3b8'
+
+function cargoTypeColorExpression() {
+  const expr = ['match', ['get', 'terminal_type']]
+  for (const [type, color] of Object.entries(CARGO_TYPE_COLOR)) expr.push(type, color)
+  expr.push(CARGO_TYPE_DEFAULT_COLOR)
+  return expr
+}
+
 // Bottom to top: port sits under terminal/berth.
 const LEVELS = ['port', 'terminal', 'berth']
 
@@ -232,6 +251,19 @@ export async function initMap(containerId) {
     }
   }
 
+  // 'level' (default): terminal colored same as the legend (blue). 'cargo':
+  // terminal colored per its terminal_type via a match expression. Port and
+  // berth layers are unaffected either way.
+  function setColorMode(mode) {
+    if (mode === 'cargo') {
+      map.setPaintProperty('polygons-terminal-fill', 'fill-color', cargoTypeColorExpression())
+      map.setPaintProperty('polygons-terminal-line', 'line-color', cargoTypeColorExpression())
+    } else {
+      map.setPaintProperty('polygons-terminal-fill', 'fill-color', LEVEL_STYLE.terminal.fill)
+      map.setPaintProperty('polygons-terminal-line', 'line-color', LEVEL_STYLE.terminal.line)
+    }
+  }
+
   function fitBounds(bbox) {
     if (!bbox) {
       map.flyTo({ center: [10, 20], zoom: 1.5 })
@@ -245,5 +277,5 @@ export async function initMap(containerId) {
     }
   }
 
-  return { map, setScope, setActiveLevels, setActiveLevelsSync, setExtraPorts, setExtraPortsSync, setCargoType, setCargoTypeSync, fitBounds }
+  return { map, setScope, setActiveLevels, setActiveLevelsSync, setExtraPorts, setExtraPortsSync, setCargoType, setCargoTypeSync, setColorMode, fitBounds }
 }
