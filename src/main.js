@@ -77,26 +77,38 @@ async function bootstrap() {
   // drops its render instead of overwriting the UI with stale data.
   let requestToken = 0
   let extraPortIds = new Set()
+  let extraPortOverrides = {}
 
   async function applyScope() {
     const token = ++requestToken
     const { scope, value } = currentScope()
     showLoading()
     extraPortIds = new Set()
-    setExtraPortsSync([])
+    extraPortOverrides = {}
+    setExtraPortsSync([], {})
     await setScope(scope, value)
     if (token !== requestToken) return
-    await renderKpiCards(scope, value)
+    await renderKpiCards(scope, value, cargoTypeSelect.value || null)
     if (token !== requestToken) return
     await renderPortRelations(scope === 'port' ? Number(value) : null, selectPortById, toggleRelatedPort)
   }
 
   // A checked related-port row overlays that port's polygons on the map on
   // top of the current scope, without changing the KPI cards or filters.
-  function toggleRelatedPort(portId, checked) {
-    if (checked) extraPortIds.add(portId)
-    else extraPortIds.delete(portId)
-    setExtraPorts([...extraPortIds]).catch(showError)
+  // For a checked sub-port specifically, its own port-polygon tooltip shows
+  // the currently browsed (parent) port's name instead of its own.
+  function toggleRelatedPort(portId, checked, isSubPorts) {
+    if (checked) {
+      extraPortIds.add(portId)
+      if (isSubPorts && portSelect.value) {
+        const parentRow = portsMaster.find((p) => String(p.port_id) === portSelect.value)
+        if (parentRow) extraPortOverrides[portId] = parentRow.port
+      }
+    } else {
+      extraPortIds.delete(portId)
+      delete extraPortOverrides[portId]
+    }
+    setExtraPorts([...extraPortIds], extraPortOverrides).catch(showError)
   }
 
   // Jump to an arbitrary port (e.g. from the parent/sub-port relations
@@ -149,8 +161,10 @@ async function bootstrap() {
     })
   })
 
-  cargoTypeSelect.addEventListener('change', () => {
-    setCargoType(cargoTypeSelect.value).catch(showError)
+  cargoTypeSelect.addEventListener('change', async () => {
+    const { scope, value } = currentScope()
+    await setCargoType(cargoTypeSelect.value).catch(showError)
+    await renderKpiCards(scope, value, cargoTypeSelect.value || null).catch(showError)
   })
 
   resetBtn.addEventListener('click', async () => {

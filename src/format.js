@@ -9,6 +9,15 @@ export function formatCompact(n) {
   return num.toFixed(1)
 }
 
+// Counts (ports, terminals, berths, sub-ports): whole numbers below 1000,
+// K/Mn/Bn compact notation at and above (matches formatCompact's suffixes).
+export function formatCount(n) {
+  const num = Number(n)
+  if (!isFinite(num)) return '0'
+  if (Math.abs(num) < 1000) return String(Math.round(num))
+  return formatCompact(num)
+}
+
 // Area cards are sourced in sqkm; below 1.0 sqkm that rounds to "0.0", so
 // switch to sqm (1 sqkm = 1e6 sqm) for small scopes.
 export function formatArea(sqkm) {

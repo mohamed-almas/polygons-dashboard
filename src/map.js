@@ -27,7 +27,7 @@ async function fetchLevelGeoJson(level, scope, value, cargoType) {
   // These RPCs return a single aggregated `json` array (not a SETOF row
   // set), so there's no PostgREST row cap to page around -- one call.
   const params = { p_scope: scope, p_value: value }
-  if (level === 'terminal') params.p_cargo_type = cargoType || null
+  if (level === 'terminal' || level === 'berth') params.p_cargo_type = cargoType || null
   const { data, error } = await supabase.rpc(RPC_NAME[level], params)
   if (error) throw error
   const rows = data || []
@@ -136,6 +136,7 @@ export async function initMap(containerId) {
   let currentValue = null
   let currentCargoType = null
   let extraPortIds = []
+  let extraPortOverrides = {}
   let refreshToken = 0
 
   async function refresh() {
@@ -158,10 +159,18 @@ export async function initMap(containerId) {
 
         const seen = new Set(primary.features.map((f) => f.properties.id))
         const features = primary.features.slice()
-        for (const extra of extras) {
-          for (const f of extra.features) {
+        for (let i = 0; i < extras.length; i++) {
+          const overrideName = extraPortOverrides[extraPortIds[i]]
+          for (const f of extras[i].features) {
             if (seen.has(f.properties.id)) continue
             seen.add(f.properties.id)
+            // A sub-port's own port polygon, when overlaid, shows the
+            // currently browsed (parent) port's name on hover instead of
+            // its own -- only the port-level polygon, not its terminals
+            // or berths.
+            if (level === 'port' && overrideName) {
+              f.properties.port_name = overrideName
+            }
             features.push(f)
           }
         }
@@ -189,15 +198,19 @@ export async function initMap(containerId) {
 
   // Overlay one or more extra ports' polygons on top of the current scope
   // (e.g. a related parent/sub-port checked in the relations table).
-  async function setExtraPorts(portIds) {
+  // overrides is an optional {portId: displayName} map, used so a checked
+  // sub-port's own port polygon tooltip shows the parent port's name.
+  async function setExtraPorts(portIds, overrides) {
     extraPortIds = portIds
+    extraPortOverrides = overrides || {}
     await refresh()
   }
 
   // Same as setExtraPorts but skips the fetch -- for applyScope's own
   // scope-change path, which calls setScope right after anyway.
-  function setExtraPortsSync(portIds) {
+  function setExtraPortsSync(portIds, overrides) {
     extraPortIds = portIds
+    extraPortOverrides = overrides || {}
   }
 
   async function setActiveLevels(levels) {

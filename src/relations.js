@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient.js'
-import { formatCompact, formatArea } from './format.js'
+import { formatCompact, formatArea, formatCount } from './format.js'
 
 // Ports carry an optional parent_port_code/parent_port on their own polygon
 // row (set by the provider for satellite/sub-ports). A port's children are
@@ -62,7 +62,7 @@ export async function renderPortRelations(portId, onSelectPort, onToggleRelated)
       const checkbox = document.createElement('input')
       checkbox.type = 'checkbox'
       checkbox.title = 'Show this port\'s polygons on the map too'
-      checkbox.addEventListener('change', () => onToggleRelated(r.port_code, checkbox.checked))
+      checkbox.addEventListener('change', () => onToggleRelated(r.port_code, checkbox.checked, isSubPorts))
       tdCheck.appendChild(checkbox)
     }
 
@@ -74,9 +74,9 @@ export async function renderPortRelations(portId, onSelectPort, onToggleRelated)
     }
 
     const tdTerminals = document.createElement('td')
-    tdTerminals.textContent = data ? formatCompact(data.terminal_count) : '-'
+    tdTerminals.textContent = data ? formatCount(data.terminal_count) : '-'
     const tdBerths = document.createElement('td')
-    tdBerths.textContent = data ? formatCompact(data.berth_count) : '-'
+    tdBerths.textContent = data ? formatCount(data.berth_count) : '-'
     const tdPhysical = document.createElement('td')
     tdPhysical.textContent = data ? formatArea(data.physical_area_sqm) : '-'
     const tdHarbor = document.createElement('td')
@@ -94,7 +94,7 @@ export async function renderPortRelations(portId, onSelectPort, onToggleRelated)
   if (isSubPorts) {
     const kpi = document.createElement('div')
     kpi.className = 'relations-kpi'
-    kpi.innerHTML = `<div class="kpi-value">${uniqueChildren.length}</div><div class="kpi-label">Sub-Ports</div>`
+    kpi.innerHTML = `<div class="kpi-value">${formatCount(uniqueChildren.length)}</div><div class="kpi-label">Sub-Ports</div>`
     container.appendChild(kpi)
   }
 }
