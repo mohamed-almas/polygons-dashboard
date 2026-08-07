@@ -2,7 +2,7 @@ import './style.css'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { initMap, CARGO_TYPE_COLOR } from './map.js'
 import { renderKpiCards } from './kpi.js'
-import { loadPortsMaster, distinctRegions, countriesInRegion, portsInCountry, bboxForRows } from './filters.js'
+import { loadPortsMaster, distinctRegions, distinctCoastalRegions, countriesInRegion, portsInCountry, bboxForRows } from './filters.js'
 import { renderPortRelations } from './relations.js'
 
 const CARGO_SWATCH_CLASS = {
@@ -18,11 +18,15 @@ const CARGO_TYPES = Object.keys(CARGO_TYPE_COLOR)
 const kpiCards = document.getElementById('kpi-cards')
 const regionSelect = document.getElementById('region-select')
 const countrySelect = document.getElementById('country-select')
+const coastalRegionSelect = document.getElementById('coastal-region-select')
 const portSelect = document.getElementById('port-select')
 const cargoTypeSelect = document.getElementById('cargo-type-select')
 const legendSelect = document.getElementById('legend-select')
 const legendItems = document.getElementById('legend-items')
 const resetBtn = document.getElementById('reset-btn')
+const themeToggle = document.getElementById('theme-toggle')
+const themeIcon = document.getElementById('theme-icon')
+const themeLabel = document.getElementById('theme-label')
 
 function showLoading() {
   kpiCards.textContent = 'Loading...'
@@ -71,13 +75,18 @@ async function bootstrap() {
   }
 
   populateSelect(regionSelect, distinctRegions(portsMaster).map((r) => ({ value: r, label: r })), 'World')
+  populateSelect(coastalRegionSelect, distinctCoastalRegions(portsMaster).map((r) => ({ value: r, label: r })), 'All coastal regions')
   refreshCountryOptions()
   refreshPortOptions()
 
   // Current filter -> {scope, value} for the RPC-backed map/KPI queries.
+  // Coastal Region is an independent grouping (spans multiple countries),
+  // not a nested step inside Region/Country -- most-specific-wins, same as
+  // the existing region/country/port chain.
   function currentScope() {
     if (portSelect.value) return { scope: 'port', value: portSelect.value }
     if (countrySelect.value) return { scope: 'country', value: countrySelect.value }
+    if (coastalRegionSelect.value) return { scope: 'coastal_region', value: coastalRegionSelect.value }
     if (regionSelect.value) return { scope: 'region', value: regionSelect.value }
     return { scope: 'world', value: null }
   }
@@ -108,9 +117,13 @@ async function bootstrap() {
     checkbox.type = 'checkbox'
     checkbox.checked = checked
     checkbox.addEventListener('change', () => onChange(checkbox.checked))
-    const swatch = document.createElement('span')
-    swatch.className = `swatch ${swatchClass}`
-    el.append(checkbox, swatch, document.createTextNode(label))
+    el.appendChild(checkbox)
+    if (swatchClass) {
+      const swatch = document.createElement('span')
+      swatch.className = `swatch ${swatchClass}`
+      el.appendChild(swatch)
+    }
+    el.appendChild(document.createTextNode(label))
     legendItems.appendChild(el)
   }
 
@@ -125,6 +138,7 @@ async function bootstrap() {
         addLegendItem(type, CARGO_SWATCH_CLASS[type], cargoVisible.has(type), (checked) => {
           if (checked) cargoVisible.add(type)
           else cargoVisible.delete(type)
+          renderLegend()
           applyLegendState()
         })
       }
@@ -138,6 +152,15 @@ async function bootstrap() {
       berthChecked = checked
       applyLegendState()
     })
+    if (legendSelect.value === 'cargo') {
+      // "All" (no color box) is a bulk on/off for the 6 cargo-type ticks
+      // above -- checked when all 6 are currently on.
+      addLegendItem('All', null, cargoVisible.size === CARGO_TYPES.length, (checked) => {
+        cargoVisible = checked ? new Set(CARGO_TYPES) : new Set()
+        renderLegend()
+        applyLegendState()
+      })
+    }
   }
 
   renderLegend()
@@ -188,6 +211,7 @@ async function bootstrap() {
     const row = portsMaster.find((p) => p.port_id === portId)
     if (!row) return
     regionSelect.value = row.region || ''
+    coastalRegionSelect.value = ''
     refreshCountryOptions()
     countrySelect.value = row.country || ''
     refreshPortOptions()
@@ -199,9 +223,11 @@ async function bootstrap() {
   function zoomToCurrentScope() {
     let rows = portsMaster
     if (regionSelect.value) rows = rows.filter((p) => p.region === regionSelect.value)
+    if (coastalRegionSelect.value) rows = rows.filter((p) => p.coastal_region === coastalRegionSelect.value)
     if (countrySelect.value) rows = rows.filter((p) => p.country === countrySelect.value)
     if (portSelect.value) rows = rows.filter((p) => String(p.port_id) === portSelect.value)
-    fitBounds(regionSelect.value || countrySelect.value || portSelect.value ? bboxForRows(rows) : null)
+    const anyFilter = regionSelect.value || coastalRegionSelect.value || countrySelect.value || portSelect.value
+    fitBounds(anyFilter ? bboxForRows(rows) : null)
   }
 
   regionSelect.addEventListener('change', async () => {
@@ -214,6 +240,13 @@ async function bootstrap() {
   })
 
   countrySelect.addEventListener('change', async () => {
+    portSelect.value = ''
+    refreshPortOptions()
+    zoomToCurrentScope()
+    await applyScope().catch(showError)
+  })
+
+  coastalRegionSelect.addEventListener('change', async () => {
     portSelect.value = ''
     refreshPortOptions()
     zoomToCurrentScope()
@@ -240,6 +273,7 @@ async function bootstrap() {
   resetBtn.addEventListener('click', async () => {
     regionSelect.value = ''
     countrySelect.value = ''
+    coastalRegionSelect.value = ''
     portSelect.value = ''
     cargoTypeSelect.value = ''
     refreshCountryOptions()
@@ -262,6 +296,14 @@ async function bootstrap() {
 
   await applyScope()
 }
+
+themeToggle.addEventListener('click', () => {
+  const root = document.documentElement
+  const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
+  root.setAttribute('data-theme', next)
+  themeIcon.textContent = next === 'light' ? '☀️' : '🌙'
+  themeLabel.textContent = next === 'light' ? 'Light' : 'Dark'
+})
 
 try {
   await bootstrap()

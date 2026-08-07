@@ -20,13 +20,14 @@ export const LEVEL_STYLE = {
 // Terminal colors when coloring by cargo type instead of by level. Port and
 // berth colors stay the same in both modes.
 export const CARGO_TYPE_COLOR = {
-  Bulk: '#f59e0b',
-  Container: '#10b981',
-  Multipurpose: '#8b5cf6',
-  'Ro-Ro': '#ec4899',
-  Shipyard: '#0891b2',
-  Tanker: '#f97316',
+  Bulk: '#16a34a',
+  Container: '#218bc9',
+  Multipurpose: '#f97316',
+  'Ro-Ro': '#eab308',
+  Shipyard: '#9333ea',
+  Tanker: '#000000',
 }
+const CARGO_TYPE_FILL_OPACITY = 0.7
 const CARGO_TYPE_DEFAULT_COLOR = '#94a3b8'
 
 function cargoTypeColorExpression() {
@@ -259,9 +260,11 @@ export async function initMap(containerId) {
   function setColorMode(mode) {
     if (mode === 'cargo') {
       map.setPaintProperty('polygons-terminal-fill', 'fill-color', cargoTypeColorExpression())
+      map.setPaintProperty('polygons-terminal-fill', 'fill-opacity', CARGO_TYPE_FILL_OPACITY)
       map.setPaintProperty('polygons-terminal-line', 'line-color', cargoTypeColorExpression())
     } else {
       map.setPaintProperty('polygons-terminal-fill', 'fill-color', LEVEL_STYLE.terminal.fill)
+      map.setPaintProperty('polygons-terminal-fill', 'fill-opacity', LEVEL_STYLE.terminal.fillOpacity)
       map.setPaintProperty('polygons-terminal-line', 'line-color', LEVEL_STYLE.terminal.line)
     }
   }

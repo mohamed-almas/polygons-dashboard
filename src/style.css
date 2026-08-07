@@ -1,10 +1,22 @@
-:root {
-  --ink: #1e293b;
-  --muted: #64748b;
-  --border: #e2e8f0;
-  --bg: #f8fafc;
+:root[data-theme="dark"] {
+  --ink: #e2ecf5;
+  --muted: #8aaec9;
+  --border: #1e3a5f;
+  --bg: #07101f;
+  --card-bg: #0d1a2e;
+  --accent: #218bc9;
+}
+
+:root[data-theme="light"] {
+  --ink: #2d3955;
+  --muted: #63666a;
+  --border: #d9d9d6;
+  --bg: #f4f5f7;
   --card-bg: #ffffff;
-  --accent: #2563eb;
+  --accent: #218bc9;
+}
+
+:root {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color: var(--ink);
 }
@@ -18,6 +30,7 @@ html, body, #app {
   display: flex;
   flex-direction: column;
   background: var(--bg);
+  transition: background 0.25s, color 0.25s;
 }
 
 #topbar {
@@ -28,6 +41,7 @@ html, body, #app {
   padding: 14px 20px;
   background: var(--card-bg);
   border-bottom: 1px solid var(--border);
+  transition: background 0.25s, border-color 0.25s;
 }
 
 #topbar h1 {
@@ -36,6 +50,27 @@ html, body, #app {
   font-weight: 600;
   letter-spacing: 0.01em;
   align-self: center;
+  color: var(--ink);
+}
+
+#theme-toggle {
+  margin-left: auto;
+  align-self: center;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+#theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.16);
 }
 
 #legend-row {
@@ -46,6 +81,7 @@ html, body, #app {
   padding: 10px 20px;
   background: var(--card-bg);
   border-bottom: 1px solid var(--border);
+  transition: background 0.25s, border-color 0.25s;
 }
 
 .control-group {
@@ -77,6 +113,7 @@ html, body, #app {
   gap: 14px;
   align-items: center;
   height: 30px;
+  flex-wrap: wrap;
 }
 
 .level-toggle {
@@ -84,6 +121,7 @@ html, body, #app {
   align-items: center;
   gap: 6px;
   font-size: 0.85rem;
+  color: var(--ink);
   cursor: pointer;
 }
 
@@ -94,16 +132,16 @@ html, body, #app {
   border-radius: 2px;
 }
 
-.swatch-port { background: rgba(255, 255, 255, 0.4); border: 2px solid #000000; }
+.swatch-port { background: rgba(255, 255, 255, 0.15); border: 2px solid #000000; }
 .swatch-terminal { background: rgba(37, 99, 235, 0.5); border: 1px solid #2563eb; }
 .swatch-berth { background: rgba(220, 38, 38, 0.5); border: 1px solid #dc2626; }
 
-.swatch-cargo-bulk { background: #f59e0b; }
-.swatch-cargo-container { background: #10b981; }
-.swatch-cargo-multipurpose { background: #8b5cf6; }
-.swatch-cargo-roro { background: #ec4899; }
-.swatch-cargo-shipyard { background: #0891b2; }
-.swatch-cargo-tanker { background: #f97316; }
+.swatch-cargo-bulk { background: rgba(22, 163, 74, 0.7); border: 1px solid #16a34a; }
+.swatch-cargo-container { background: rgba(33, 139, 201, 0.7); border: 1px solid #218bc9; }
+.swatch-cargo-multipurpose { background: rgba(249, 115, 22, 0.7); border: 1px solid #f97316; }
+.swatch-cargo-roro { background: rgba(234, 179, 8, 0.7); border: 1px solid #eab308; }
+.swatch-cargo-shipyard { background: rgba(147, 51, 234, 0.7); border: 1px solid #9333ea; }
+.swatch-cargo-tanker { background: rgba(0, 0, 0, 0.7); border: 1px solid #000000; }
 
 #reset-btn {
   padding: 6px 12px;
@@ -123,13 +161,22 @@ html, body, #app {
 #kpi-cards {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  width: 200px;
+  gap: 12px;
+  width: 210px;
   flex-shrink: 0;
   padding: 14px;
   background: var(--bg);
   overflow-y: auto;
   border-right: 1px solid var(--border);
+}
+
+.kpi-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
 }
 
 .kpi-card {
@@ -138,7 +185,7 @@ html, body, #app {
   border-radius: 10px;
   padding: 8px 10px;
   text-align: left;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 .kpi-value {
@@ -199,12 +246,14 @@ html, body, #app {
   margin: 0 0 8px;
   font-size: 0.85rem;
   font-weight: 600;
+  color: var(--ink);
 }
 
 .relations-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.78rem;
+  color: var(--ink);
 }
 
 .relations-table th {
@@ -230,6 +279,14 @@ html, body, #app {
 .relations-table td:first-child,
 .relations-table th:first-child {
   width: 20px;
+}
+
+.relations-note {
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
 }
 
 /* Below ~900px there isn't room for a 420px sidebar next to the map --

@@ -13,7 +13,7 @@ export async function loadPortsMaster() {
   while (true) {
     const { data, error } = await supabase
       .from('polygons_ports_master')
-      .select('port_id, port, country, region, lat, lon')
+      .select('port_id, port, country, region, coastal_region, lat, lon')
       .range(from, from + pageSize - 1)
     if (error) throw error
     allRows = allRows.concat(data)
@@ -26,6 +26,10 @@ export async function loadPortsMaster() {
 
 export function distinctRegions(portsMaster) {
   return [...new Set(portsMaster.map((p) => p.region).filter(Boolean))].sort()
+}
+
+export function distinctCoastalRegions(portsMaster) {
+  return [...new Set(portsMaster.map((p) => p.coastal_region).filter(Boolean))].sort()
 }
 
 export function countriesInRegion(portsMaster, region) {

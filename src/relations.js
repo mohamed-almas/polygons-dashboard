@@ -46,7 +46,7 @@ export async function renderPortRelations(portId, onSelectPort, onToggleRelated)
   const table = document.createElement('table')
   table.className = 'relations-table'
   const thead = document.createElement('tr')
-  for (const label of ['', 'Port Name', 'Terminals', 'Berths', 'Physical Port Area', 'Harbor Area / Port Limits', 'Quay Length (m)']) {
+  for (const label of ['', 'Port Name', 'Terminals', 'Berths', 'Wharf Area', 'Port Limits / Harbor Area', 'Est. Quay Length (m)']) {
     const th = document.createElement('th')
     th.textContent = label
     thead.appendChild(th)
@@ -97,4 +97,9 @@ export async function renderPortRelations(portId, onSelectPort, onToggleRelated)
     kpi.innerHTML = `<div class="kpi-value">${formatCount(uniqueChildren.length)}</div><div class="kpi-label">Sub-Ports</div>`
     container.appendChild(kpi)
   }
+
+  const note = document.createElement('p')
+  note.className = 'relations-note'
+  note.textContent = 'The port polygon for sub-ports is that of the parent port.'
+  container.appendChild(note)
 }
