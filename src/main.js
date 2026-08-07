@@ -26,7 +26,6 @@ const legendItems = document.getElementById('legend-items')
 const resetBtn = document.getElementById('reset-btn')
 const themeToggle = document.getElementById('theme-toggle')
 const themeIcon = document.getElementById('theme-icon')
-const themeLabel = document.getElementById('theme-label')
 
 function showLoading() {
   kpiCards.textContent = 'Loading...'
@@ -301,8 +300,7 @@ themeToggle.addEventListener('click', () => {
   const root = document.documentElement
   const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
   root.setAttribute('data-theme', next)
-  themeIcon.textContent = next === 'light' ? '☀️' : '🌙'
-  themeLabel.textContent = next === 'light' ? 'Light' : 'Dark'
+  themeIcon.textContent = next === 'light' ? '☀' : '☾'
 })
 
 try {

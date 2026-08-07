@@ -25,7 +25,16 @@ export function formatArea(sqkm) {
   if (isFinite(num) && Math.abs(num) < 1) {
     return `${formatCompact(num * 1e6)} sqm`
   }
-  return `${formatCompact(num)} sqkm`
+  return `${formatCompact(num)} Sqkm`
+}
+
+// Quay length is sourced in meters; from 1000 m it switches to Km (1 decimal).
+export function formatLength(m) {
+  const num = Number(m)
+  if (isFinite(num) && Math.abs(num) >= 1000) {
+    return `${(num / 1000).toFixed(1)} Km`
+  }
+  return `${formatCompact(num)} m`
 }
 
 // Polygon names in the source data are suffixed " Polygon" (e.g. "Berth 2

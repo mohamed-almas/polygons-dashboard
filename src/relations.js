@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient.js'
-import { formatCompact, formatArea, formatCount } from './format.js'
+import { formatArea, formatCount, formatLength } from './format.js'
 
 // Ports carry an optional parent_port_code/parent_port on their own polygon
 // row (set by the provider for satellite/sub-ports). A port's children are
@@ -46,7 +46,7 @@ export async function renderPortRelations(portId, onSelectPort, onToggleRelated)
   const table = document.createElement('table')
   table.className = 'relations-table'
   const thead = document.createElement('tr')
-  for (const label of ['', 'Port Name', 'Terminals', 'Berths', 'Wharf Area', 'Port Limits / Harbor Area', 'Est. Quay Length (m)']) {
+  for (const label of ['', 'Port Name', 'Terminals', 'Berths', 'Wharf Area', 'Port Limits / Harbor Area', 'Est. Quay Length']) {
     const th = document.createElement('th')
     th.textContent = label
     thead.appendChild(th)
@@ -82,7 +82,7 @@ export async function renderPortRelations(portId, onSelectPort, onToggleRelated)
     const tdHarbor = document.createElement('td')
     tdHarbor.textContent = data ? formatArea(data.estimated_area_sqm) : '-'
     const tdQuay = document.createElement('td')
-    tdQuay.textContent = data ? formatCompact(data.quay_length_m) : '-'
+    tdQuay.textContent = data ? formatLength(data.quay_length_m) : '-'
 
     tr.append(tdCheck, tdName, tdTerminals, tdBerths, tdPhysical, tdHarbor, tdQuay)
     table.appendChild(tr)

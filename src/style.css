@@ -35,40 +35,53 @@ html, body, #app {
 
 #topbar {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: flex-end;
-  gap: 20px;
-  padding: 14px 20px;
+  gap: 10px;
+  padding: 10px 16px;
   background: var(--card-bg);
   border-bottom: 1px solid var(--border);
   transition: background 0.25s, border-color 0.25s;
+  overflow-x: auto;
 }
 
 #topbar h1 {
-  margin: 0 4px 8px 0;
-  font-size: 1.05rem;
+  margin: 0 4px 6px 0;
+  font-size: 0.95rem;
   font-weight: 600;
   letter-spacing: 0.01em;
   align-self: center;
   color: var(--ink);
+  white-space: nowrap;
 }
 
-#theme-toggle {
-  margin-left: auto;
-  align-self: center;
+#icon-buttons {
   display: flex;
   align-items: center;
-  gap: 7px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 5px 12px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ink);
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
+#reset-btn,
+#theme-toggle {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--ink);
+  padding: 0;
+}
+
+#reset-btn:hover,
 #theme-toggle:hover {
   background: rgba(255, 255, 255, 0.16);
 }
@@ -78,7 +91,7 @@ html, body, #app {
   flex-wrap: wrap;
   align-items: center;
   gap: 16px;
-  padding: 10px 20px;
+  padding: 8px 16px;
   background: var(--card-bg);
   border-bottom: 1px solid var(--border);
   transition: background 0.25s, border-color 0.25s;
@@ -87,25 +100,27 @@ html, body, #app {
 .control-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  min-width: 160px;
+  gap: 4px;
+  min-width: 100px;
+  flex-shrink: 0;
 }
 
 .control-group label {
-  font-size: 0.72rem;
+  font-size: 0.62rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   color: var(--muted);
+  white-space: nowrap;
 }
 
 .control-group select {
-  padding: 6px 8px;
+  padding: 5px 6px;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--card-bg);
   color: var(--ink);
-  font-size: 0.85rem;
+  font-size: 0.78rem;
 }
 
 .level-toggles {
@@ -174,7 +189,7 @@ html, body, #app {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  border: 1px solid var(--border);
+  border: 2px solid var(--muted);
   border-radius: 12px;
   padding: 10px;
 }

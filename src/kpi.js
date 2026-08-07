@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient.js'
-import { formatCompact, formatArea, formatCount } from './format.js'
+import { formatArea, formatCount, formatLength } from './format.js'
 
 export async function renderKpiCards(scope, value, cargoType) {
   const { data, error } = await supabase
@@ -22,7 +22,7 @@ export async function renderKpiCards(scope, value, cargoType) {
     <div class="kpi-group">
       <div class="kpi-card"><div class="kpi-value">${formatCount(data.berth_count)}</div><div class="kpi-label">Berths</div></div>
       <div class="kpi-card"><div class="kpi-value">${formatArea(data.berth_area_sqm)}</div><div class="kpi-label">Berths Area</div></div>
-      <div class="kpi-card"><div class="kpi-value">${formatCompact(data.quay_length_m)}</div><div class="kpi-label">Est. Quay Length (m)</div></div>
+      <div class="kpi-card"><div class="kpi-value">${formatLength(data.quay_length_m)}</div><div class="kpi-label">Est. Quay Length</div></div>
     </div>
   `
 }

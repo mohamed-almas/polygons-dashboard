@@ -27,7 +27,7 @@ export const CARGO_TYPE_COLOR = {
   Shipyard: '#9333ea',
   Tanker: '#000000',
 }
-const CARGO_TYPE_FILL_OPACITY = 0.7
+const CARGO_TYPE_FILL_OPACITY = 0.85
 const CARGO_TYPE_DEFAULT_COLOR = '#94a3b8'
 
 function cargoTypeColorExpression() {
