@@ -43,14 +43,6 @@
           </select>
         </div>
 
-        <div class="control-group">
-          <label for="legend-select">Legend Type</label>
-          <select id="legend-select">
-            <option value="level">By Level</option>
-            <option value="cargo">By Level &amp; Cargo Type</option>
-          </select>
-        </div>
-
         <div id="icon-buttons">
           <button id="reset-btn" type="button" title="Reset filters" aria-label="Reset filters">&#8635;</button>
           <button id="theme-toggle" type="button" title="Toggle light/dark" aria-label="Toggle light/dark"><span id="theme-icon">&#9789;</span></button>
@@ -58,6 +50,13 @@
       </header>
 
       <div id="legend-row">
+        <div class="control-group">
+          <label for="legend-select">Legend Type</label>
+          <select id="legend-select">
+            <option value="level">By Level</option>
+            <option value="cargo">By Level &amp; Cargo Type</option>
+          </select>
+        </div>
         <div id="legend-items" class="level-toggles"></div>
       </div>
 

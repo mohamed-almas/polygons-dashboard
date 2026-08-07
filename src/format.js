@@ -32,7 +32,8 @@ export function formatArea(sqkm) {
 export function formatLength(m) {
   const num = Number(m)
   if (isFinite(num) && Math.abs(num) >= 1000) {
-    return `${(num / 1000).toFixed(1)} Km`
+    const km = (num / 1000).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+    return `${km} Km`
   }
   return `${formatCompact(num)} m`
 }

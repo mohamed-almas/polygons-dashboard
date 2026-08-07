@@ -128,8 +128,21 @@ async function bootstrap() {
 
   function renderLegend() {
     legendItems.innerHTML = ''
+    if (legendSelect.value === 'cargo') {
+      // "All" controls every other item in this mode (Ports, the 6 cargo
+      // types, and Berths) -- checked when all 8 are currently on.
+      const allOn = portChecked && cargoVisible.size === CARGO_TYPES.length && berthChecked
+      addLegendItem('All', null, allOn, (checked) => {
+        portChecked = checked
+        berthChecked = checked
+        cargoVisible = checked ? new Set(CARGO_TYPES) : new Set()
+        renderLegend()
+        applyLegendState()
+      })
+    }
     addLegendItem('Ports', 'swatch-port', portChecked, (checked) => {
       portChecked = checked
+      if (legendSelect.value === 'cargo') renderLegend()
       applyLegendState()
     })
     if (legendSelect.value === 'cargo') {
@@ -149,17 +162,9 @@ async function bootstrap() {
     }
     addLegendItem('Berths', 'swatch-berth', berthChecked, (checked) => {
       berthChecked = checked
+      if (legendSelect.value === 'cargo') renderLegend()
       applyLegendState()
     })
-    if (legendSelect.value === 'cargo') {
-      // "All" (no color box) is a bulk on/off for the 6 cargo-type ticks
-      // above -- checked when all 6 are currently on.
-      addLegendItem('All', null, cargoVisible.size === CARGO_TYPES.length, (checked) => {
-        cargoVisible = checked ? new Set(CARGO_TYPES) : new Set()
-        renderLegend()
-        applyLegendState()
-      })
-    }
   }
 
   renderLegend()
