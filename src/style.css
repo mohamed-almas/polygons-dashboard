@@ -339,13 +339,17 @@ html, body, #app {
   color: var(--ink);
 }
 
+/* Fixed light background + dark text regardless of the UI theme, so the
+   tooltip stays readable over both the light and dark basemap. */
 .maplibregl-popup-content {
   font-size: 0.8rem;
   padding: 8px 10px;
   line-height: 1.4;
+  background: #ffffff;
+  color: #1e293b;
 }
 
 .tooltip-area {
   margin-top: 4px;
-  color: var(--muted);
+  color: #475569;
 }

@@ -11,14 +11,17 @@ const RPC_NAME = {
   berth: 'polygons_berths_geojson',
 }
 
+// Port border switches white/black by UI theme for contrast against the
+// basemap (see portLineColor); everything else here is theme-independent.
 export const LEVEL_STYLE = {
-  port: { line: '#000000', fill: '#ffffff', fillOpacity: 0.05, lineWidth: 2.5 },
+  port: { fill: '#ffffff', fillOpacity: 0.05, lineWidth: 2.5 },
   terminal: { line: '#2563eb', fill: '#2563eb', fillOpacity: 0.35, lineWidth: 1.5 },
   berth: { line: '#dc2626', fill: '#dc2626', fillOpacity: 0.35, lineWidth: 1.5 },
 }
 
 // Terminal colors when coloring by cargo type instead of by level. Port and
-// berth colors stay the same in both modes.
+// berth colors stay the same in both modes. Tanker is black on the light
+// basemap but switches to white on the dark basemap for contrast.
 export const CARGO_TYPE_COLOR = {
   Bulk: '#16a34a',
   Container: '#218bc9',
@@ -30,9 +33,18 @@ export const CARGO_TYPE_COLOR = {
 const CARGO_TYPE_FILL_OPACITY = 0.85
 const CARGO_TYPE_DEFAULT_COLOR = '#94a3b8'
 
-function cargoTypeColorExpression() {
+function portLineColor(uiTheme) {
+  return uiTheme === 'dark' ? '#ffffff' : '#000000'
+}
+
+function cargoColor(type, uiTheme) {
+  if (type === 'Tanker' && uiTheme === 'dark') return '#ffffff'
+  return CARGO_TYPE_COLOR[type]
+}
+
+function cargoTypeColorExpression(uiTheme) {
   const expr = ['match', ['get', 'terminal_type']]
-  for (const [type, color] of Object.entries(CARGO_TYPE_COLOR)) expr.push(type, color)
+  for (const type of Object.keys(CARGO_TYPE_COLOR)) expr.push(type, cargoColor(type, uiTheme))
   expr.push(CARGO_TYPE_DEFAULT_COLOR)
   return expr
 }
@@ -40,8 +52,11 @@ function cargoTypeColorExpression() {
 // Bottom to top: port sits under terminal/berth.
 const LEVELS = ['port', 'terminal', 'berth']
 
-// Light, borders-only basemap with no graticule/lat-lon lines.
-const BASEMAP_STYLE = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
+// Borders-only basemaps with no graticule/lat-lon lines, one per UI theme.
+const BASEMAP_STYLE = {
+  light: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+  dark: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+}
 
 async function fetchLevelGeoJson(level, scope, value, cargoType) {
   // These RPCs return a single aggregated `json` array (not a SETOF row
@@ -98,8 +113,9 @@ function tooltipContent(props) {
   return container
 }
 
-function addLevelLayers(map, level) {
+function addLevelLayers(map, level, uiTheme) {
   const style = LEVEL_STYLE[level]
+  const lineColor = level === 'port' ? portLineColor(uiTheme) : style.line
   const sourceId = `polygons-${level}-source`
   const fillLayerId = `polygons-${level}-fill`
   const lineLayerId = `polygons-${level}-line`
@@ -120,7 +136,7 @@ function addLevelLayers(map, level) {
     id: lineLayerId,
     type: 'line',
     source: sourceId,
-    paint: { 'line-color': style.line, 'line-width': style.lineWidth },
+    paint: { 'line-color': lineColor, 'line-width': style.lineWidth },
   })
 
   const hoverPopup = new Popup({ closeButton: false, closeOnClick: false })
@@ -139,10 +155,12 @@ function addLevelLayers(map, level) {
   map.on('mouseleave', fillLayerId, onLeave)
 }
 
-export async function initMap(containerId) {
+export async function initMap(containerId, initialUiTheme) {
+  let uiTheme = initialUiTheme === 'light' ? 'light' : 'dark'
+
   const map = new MaplibreMap({
     container: containerId,
-    style: BASEMAP_STYLE,
+    style: BASEMAP_STYLE[uiTheme],
     center: [10, 20],
     zoom: 1.5,
   })
@@ -151,7 +169,7 @@ export async function initMap(containerId) {
 
   await new Promise((resolve) => map.on('load', resolve))
 
-  for (const level of LEVELS) addLevelLayers(map, level)
+  for (const level of LEVELS) addLevelLayers(map, level, uiTheme)
 
   const activeLevels = new Set(LEVELS)
   let currentScope = 'world'
@@ -159,6 +177,8 @@ export async function initMap(containerId) {
   let currentCargoType = null
   let extraPortIds = []
   let extraPortOverrides = {}
+  let currentColorMode = 'level'
+  let currentCargoVisibility = Object.keys(CARGO_TYPE_COLOR)
   let refreshToken = 0
 
   async function refresh() {
@@ -258,10 +278,11 @@ export async function initMap(containerId) {
   // terminal colored per its terminal_type via a match expression. Port and
   // berth layers are unaffected either way.
   function setColorMode(mode) {
+    currentColorMode = mode
     if (mode === 'cargo') {
-      map.setPaintProperty('polygons-terminal-fill', 'fill-color', cargoTypeColorExpression())
+      map.setPaintProperty('polygons-terminal-fill', 'fill-color', cargoTypeColorExpression(uiTheme))
       map.setPaintProperty('polygons-terminal-fill', 'fill-opacity', CARGO_TYPE_FILL_OPACITY)
-      map.setPaintProperty('polygons-terminal-line', 'line-color', cargoTypeColorExpression())
+      map.setPaintProperty('polygons-terminal-line', 'line-color', cargoTypeColorExpression(uiTheme))
     } else {
       map.setPaintProperty('polygons-terminal-fill', 'fill-color', LEVEL_STYLE.terminal.fill)
       map.setPaintProperty('polygons-terminal-fill', 'fill-opacity', LEVEL_STYLE.terminal.fillOpacity)
@@ -273,10 +294,27 @@ export async function initMap(containerId) {
   // whose terminal_type isn't in the given list. All 6 checked (or an empty
   // "no filter" call) clears the filter entirely.
   function setCargoTypeVisibility(types) {
+    currentCargoVisibility = types
     const allTypes = Object.keys(CARGO_TYPE_COLOR)
     const filter = types.length >= allTypes.length ? null : ['in', ['get', 'terminal_type'], ['literal', types]]
     map.setFilter('polygons-terminal-fill', filter)
     map.setFilter('polygons-terminal-line', filter)
+  }
+
+  // Swaps the basemap (light/dark) and re-tints the port border + Tanker
+  // cargo color for contrast. setStyle() wipes all custom sources/layers,
+  // so everything gets rebuilt once the new style finishes loading.
+  function setUiTheme(theme) {
+    if (theme === uiTheme) return
+    uiTheme = theme
+    map.setStyle(BASEMAP_STYLE[uiTheme])
+    map.once('style.load', () => {
+      for (const level of LEVELS) addLevelLayers(map, level, uiTheme)
+      setActiveLevelsSync([...activeLevels])
+      setColorMode(currentColorMode)
+      if (currentColorMode === 'cargo') setCargoTypeVisibility(currentCargoVisibility)
+      refresh()
+    })
   }
 
   function fitBounds(bbox) {
@@ -292,5 +330,18 @@ export async function initMap(containerId) {
     }
   }
 
-  return { map, setScope, setActiveLevels, setActiveLevelsSync, setExtraPorts, setExtraPortsSync, setCargoType, setCargoTypeSync, setColorMode, setCargoTypeVisibility, fitBounds }
+  return {
+    map,
+    setScope,
+    setActiveLevels,
+    setActiveLevelsSync,
+    setExtraPorts,
+    setExtraPortsSync,
+    setCargoType,
+    setCargoTypeSync,
+    setColorMode,
+    setCargoTypeVisibility,
+    setUiTheme,
+    fitBounds,
+  }
 }

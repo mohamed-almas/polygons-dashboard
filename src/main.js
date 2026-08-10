@@ -56,9 +56,12 @@ async function bootstrap() {
   showLoading()
 
   const [
-    { setScope, setActiveLevels, setActiveLevelsSync, setExtraPorts, setExtraPortsSync, setCargoType, setCargoTypeSync, setColorMode, setCargoTypeVisibility, fitBounds },
+    { setScope, setActiveLevels, setActiveLevelsSync, setExtraPorts, setExtraPortsSync, setCargoType, setCargoTypeSync, setColorMode, setCargoTypeVisibility, setUiTheme, fitBounds },
     portsMaster,
-  ] = await Promise.all([initMap('map'), loadPortsMaster()])
+  ] = await Promise.all([
+    initMap('map', document.documentElement.getAttribute('data-theme')),
+    loadPortsMaster(),
+  ])
 
   function refreshCountryOptions() {
     const region = regionSelect.value
@@ -298,15 +301,16 @@ async function bootstrap() {
     await applyScope().catch(showError)
   })
 
+  themeToggle.addEventListener('click', () => {
+    const root = document.documentElement
+    const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
+    root.setAttribute('data-theme', next)
+    themeIcon.textContent = next === 'light' ? '☀' : '☾'
+    setUiTheme(next)
+  })
+
   await applyScope()
 }
-
-themeToggle.addEventListener('click', () => {
-  const root = document.documentElement
-  const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
-  root.setAttribute('data-theme', next)
-  themeIcon.textContent = next === 'light' ? '☀' : '☾'
-})
 
 try {
   await bootstrap()
