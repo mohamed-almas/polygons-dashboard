@@ -169,6 +169,7 @@ export async function initMap(containerId, initialUiTheme) {
 
   await new Promise((resolve) => map.on('load', resolve))
 
+  if (uiTheme === 'dark') recolorDarkBasemap()
   for (const level of LEVELS) addLevelLayers(map, level, uiTheme)
 
   const activeLevels = new Set(LEVELS)
@@ -301,14 +302,36 @@ export async function initMap(containerId, initialUiTheme) {
     map.setFilter('polygons-terminal-line', filter)
   }
 
+  // Recolor the dark basemap's land dark blue (not the vendor style's
+  // near-black default) and water a lighter blue for contrast, by pattern
+  // -matching layer ids/types rather than hardcoding CartoDB's exact layer
+  // names (which could change upstream).
+  function recolorDarkBasemap() {
+    const layers = map.getStyle().layers || []
+    for (const layer of layers) {
+      if (layer.type !== 'background' && layer.type !== 'fill') continue
+      const id = layer.id.toLowerCase()
+      if (id.includes('water') || id.includes('ocean') || id.includes('sea')) {
+        map.setPaintProperty(layer.id, 'fill-color', '#1e3a5f')
+      } else if (layer.type === 'background' || id.includes('land') || id.includes('landuse') || id.includes('background')) {
+        const prop = layer.type === 'background' ? 'background-color' : 'fill-color'
+        map.setPaintProperty(layer.id, prop, '#0b1f3a')
+      }
+    }
+  }
+
   // Swaps the basemap (light/dark) and re-tints the port border + Tanker
-  // cargo color for contrast. setStyle() wipes all custom sources/layers,
-  // so everything gets rebuilt once the new style finishes loading.
+  // cargo color for contrast. setStyle({diff:false}) forces a full style
+  // replacement -- with diffing left on (the default), MapLibre computes a
+  // diff against the *declared* style JSON, which doesn't know about our
+  // imperatively-added polygon sources/layers, and can silently drop them
+  // (the bug where polygons vanished on a theme switch and never returned).
   function setUiTheme(theme) {
     if (theme === uiTheme) return
     uiTheme = theme
-    map.setStyle(BASEMAP_STYLE[uiTheme])
+    map.setStyle(BASEMAP_STYLE[uiTheme], { diff: false })
     map.once('style.load', () => {
+      if (uiTheme === 'dark') recolorDarkBasemap()
       for (const level of LEVELS) addLevelLayers(map, level, uiTheme)
       setActiveLevelsSync([...activeLevels])
       setColorMode(currentColorMode)
