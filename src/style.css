@@ -158,6 +158,12 @@ html, body, #app {
 .swatch-cargo-shipyard { background: rgba(147, 51, 234, 0.7); border: 1px solid #9333ea; }
 .swatch-cargo-tanker { background: rgba(0, 0, 0, 0.7); border: 1px solid #000000; }
 
+/* Map recolors the port border and Tanker cargo white on the dark basemap
+   for contrast (see portLineColor/cargoColor in map.js) -- match it here so
+   the legend swatches don't show black when the map shows white. */
+:root[data-theme="dark"] .swatch-port { border-color: #ffffff; }
+:root[data-theme="dark"] .swatch-cargo-tanker { background: rgba(255, 255, 255, 0.7); border-color: #ffffff; }
+
 #reset-btn {
   padding: 6px 12px;
   border: 1px solid var(--border);
