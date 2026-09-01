@@ -194,7 +194,7 @@ async function bootstrap() {
     await renderKpiCards(scope, value, cargoTypeSelect.value || null)
     if (token !== requestToken) return
     await renderPortRelations(scope === 'port' ? Number(value) : null, selectPortById, toggleRelatedPort)
-    relationsCollapseBtn.style.display = portRelations.innerHTML ? '' : 'none'
+    relationsCollapseBtn.style.display = portRelations.innerHTML ? 'flex' : 'none'
   }
 
   // A checked related-port row overlays that port's polygons on the map on
