@@ -30,9 +30,19 @@ export async function renderPortRelations(portId, onSelectPort, onToggleRelated)
   const isSubPorts = uniqueChildren.length > 0
   const rows = isSubPorts ? uniqueChildren : [{ port_code: parent.parent_port_code, port: parent.parent_port }]
 
-  const stats = await Promise.all(
+  let stats = await Promise.all(
     rows.map((r) => supabase.rpc('polygons_kpis', { p_scope: 'port', p_value: String(r.port_code) }).single())
   )
+
+  // Sub-ports with no terminals and no berths carry nothing useful to show
+  // in this table -- drop them (a parent row is always shown as-is).
+  let filteredRows = rows
+  if (isSubPorts) {
+    const paired = rows.map((r, i) => [r, stats[i]])
+    const kept = paired.filter(([, s]) => !s.data || s.data.terminal_count > 0 || s.data.berth_count > 0)
+    filteredRows = kept.map(([r]) => r)
+    stats = kept.map(([, s]) => s)
+  }
 
   container.innerHTML = ''
 
@@ -53,7 +63,7 @@ export async function renderPortRelations(portId, onSelectPort, onToggleRelated)
   }
   table.appendChild(thead)
 
-  rows.forEach((r, i) => {
+  filteredRows.forEach((r, i) => {
     const { data } = stats[i]
     const tr = document.createElement('tr')
 
@@ -94,7 +104,7 @@ export async function renderPortRelations(portId, onSelectPort, onToggleRelated)
   if (isSubPorts) {
     const kpi = document.createElement('div')
     kpi.className = 'relations-kpi'
-    kpi.innerHTML = `<div class="kpi-value">${formatCount(uniqueChildren.length)}</div><div class="kpi-label">Sub-Ports</div>`
+    kpi.innerHTML = `<div class="kpi-value">${formatCount(filteredRows.length)}</div><div class="kpi-label">Sub-Ports</div>`
     container.appendChild(kpi)
   }
 

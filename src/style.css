@@ -272,9 +272,12 @@ html, body, #app {
   background: var(--accent);
   color: #ffffff;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 22px;
+  line-height: 1;
   padding: 0;
   display: none;
+  align-items: center;
+  justify-content: center;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
@@ -364,6 +367,13 @@ html, body, #app {
     min-height: 320px;
   }
 
+  #relations-collapse-btn {
+    width: 100%;
+    height: 22px;
+    margin: 0;
+    transform: rotate(90deg);
+  }
+
   #port-relations {
     width: 100%;
     border-left: none;
@@ -400,6 +410,40 @@ html, body, #app {
 
   #footnote {
     padding: 10px 14px;
+  }
+}
+
+/* Phones in landscape: short viewport height, plenty of width -- the two
+   header rows (topbar + legend) eat too much vertical space otherwise,
+   squeezing the map down to a sliver. */
+@media (max-height: 450px) and (orientation: landscape) {
+  #topbar {
+    padding: 6px 12px;
+  }
+
+  #legend-row {
+    padding: 4px 12px;
+  }
+
+  .control-group label {
+    display: none;
+  }
+
+  #kpi-cards {
+    padding: 6px;
+  }
+
+  .kpi-group {
+    padding: 6px;
+    min-width: 130px;
+  }
+
+  #map-container {
+    min-height: 200px;
+  }
+
+  #footnote {
+    display: none;
   }
 }
 
