@@ -252,6 +252,34 @@ html, body, #app {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  transition: width 0.2s, padding 0.2s;
+}
+
+#port-relations.collapsed {
+  width: 0;
+  padding: 14px 0;
+  overflow: hidden;
+  border-left: none;
+}
+
+#relations-collapse-btn {
+  align-self: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 40px;
+  margin: auto 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--card-bg);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
+  display: none;
+}
+
+#relations-collapse-btn:hover {
+  background: var(--bg);
 }
 
 .relations-kpi {

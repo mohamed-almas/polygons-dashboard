@@ -24,6 +24,8 @@ const cargoTypeSelect = document.getElementById('cargo-type-select')
 const legendSelect = document.getElementById('legend-select')
 const legendItems = document.getElementById('legend-items')
 const resetBtn = document.getElementById('reset-btn')
+const relationsCollapseBtn = document.getElementById('relations-collapse-btn')
+const portRelations = document.getElementById('port-relations')
 const themeToggle = document.getElementById('theme-toggle')
 const themeIcon = document.getElementById('theme-icon')
 
@@ -192,6 +194,7 @@ async function bootstrap() {
     await renderKpiCards(scope, value, cargoTypeSelect.value || null)
     if (token !== requestToken) return
     await renderPortRelations(scope === 'port' ? Number(value) : null, selectPortById, toggleRelatedPort)
+    relationsCollapseBtn.style.display = portRelations.innerHTML ? '' : 'none'
   }
 
   // A checked related-port row overlays that port's polygons on the map on
@@ -299,6 +302,12 @@ async function bootstrap() {
     setCargoTypeSync('')
 
     await applyScope().catch(showError)
+  })
+
+  relationsCollapseBtn.addEventListener('click', () => {
+    const collapsed = portRelations.classList.toggle('collapsed')
+    relationsCollapseBtn.textContent = collapsed ? '◂' : '▸'
+    relationsCollapseBtn.title = collapsed ? 'Expand sub-ports panel' : 'Collapse sub-ports panel'
   })
 
   themeToggle.addEventListener('click', () => {
