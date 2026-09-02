@@ -5,3 +5,5 @@ dist/
 load/.venv/
 load/__pycache__/
 *.pyc
+
+.vercel

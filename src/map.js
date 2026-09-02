@@ -11,12 +11,11 @@ const RPC_NAME = {
   berth: 'polygons_berths_geojson',
 }
 
-// Port border switches white/black by UI theme for contrast against the
-// basemap (see portLineColor); everything else here is theme-independent.
+// Port is stroke-only (#ffffff both themes). Terminal blue, berth red.
 export const LEVEL_STYLE = {
-  port: { fill: '#ffffff', fillOpacity: 0.05, lineWidth: 2.5 },
-  terminal: { line: '#2563eb', fill: '#2563eb', fillOpacity: 0.35, lineWidth: 1.5 },
-  berth: { line: '#dc2626', fill: '#dc2626', fillOpacity: 0.35, lineWidth: 1.5 },
+  port: { fill: '#ffffff', fillOpacity: 0, lineWidth: 1.5 },
+  terminal: { line: '#1d4ed8', fill: '#3b82f6', fillOpacity: 0.5, lineWidth: 1.5 },
+  berth: { line: '#b91c1c', fill: '#ef4444', fillOpacity: 0.6, lineWidth: 1.5 },
 }
 
 // Terminal colors when coloring by cargo type instead of by level. Port and
@@ -34,7 +33,7 @@ const CARGO_TYPE_FILL_OPACITY = 0.85
 const CARGO_TYPE_DEFAULT_COLOR = '#94a3b8'
 
 function portLineColor(uiTheme) {
-  return uiTheme === 'dark' ? '#ffffff' : '#000000'
+  return uiTheme === 'dark' ? '#ffffff' : '#1a1a1a'
 }
 
 function cargoColor(type, uiTheme) {
