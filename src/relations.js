@@ -44,6 +44,11 @@ export async function renderPortRelations(portId, onSelectPort, onToggleRelated)
     stats = kept.map(([, s]) => s)
   }
 
+  if (isSubPorts && filteredRows.length === 0) {
+    container.innerHTML = ''
+    return
+  }
+
   container.innerHTML = ''
 
   const body = document.createElement('div')
