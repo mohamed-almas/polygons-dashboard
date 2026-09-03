@@ -61,7 +61,7 @@ async function fetchLevelGeoJson(level, scope, value, cargoType) {
   // These RPCs return a single aggregated `json` array (not a SETOF row
   // set), so there's no PostgREST row cap to page around -- one call.
   const params = { p_scope: scope, p_value: value }
-  if (level === 'terminal' || level === 'berth') params.p_cargo_type = cargoType || null
+  if (level === 'terminal' || level === 'berth') params.p_cargo_type = cargoType && cargoType.length ? cargoType : null
   const { data, error } = await supabase.rpc(RPC_NAME[level], params)
   if (error) throw error
   const rows = data || []

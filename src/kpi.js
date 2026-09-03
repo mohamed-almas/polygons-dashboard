@@ -1,9 +1,9 @@
 import { supabase } from './supabaseClient.js'
 import { formatArea, formatCount, formatLength } from './format.js'
 
-export async function renderKpiCards(scope, value, cargoType) {
+export async function renderKpiCards(scope, value, cargoTypes) {
   const { data, error } = await supabase
-    .rpc('polygons_kpis', { p_scope: scope, p_value: value, p_cargo_type: cargoType || null })
+    .rpc('polygons_kpis', { p_scope: scope, p_value: value, p_cargo_type: cargoTypes && cargoTypes.length ? cargoTypes : null })
     .single()
   if (error) throw error
 

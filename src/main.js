@@ -4,6 +4,7 @@ import { initMap, CARGO_TYPE_COLOR } from './map.js'
 import { renderKpiCards } from './kpi.js'
 import { loadPortsMaster, distinctRegions, distinctCoastalRegions, countriesInRegion, portsInCountry, bboxForRows } from './filters.js'
 import { renderPortRelations } from './relations.js'
+import { createSearchSelect } from './searchSelect.js'
 
 const CARGO_SWATCH_CLASS = {
   Bulk: 'swatch-cargo-bulk',
@@ -16,11 +17,12 @@ const CARGO_SWATCH_CLASS = {
 const CARGO_TYPES = Object.keys(CARGO_TYPE_COLOR)
 
 const kpiCards = document.getElementById('kpi-cards')
-const regionSelect = document.getElementById('region-select')
-const countrySelect = document.getElementById('country-select')
-const coastalRegionSelect = document.getElementById('coastal-region-select')
-const portSelect = document.getElementById('port-select')
-const cargoTypeSelect = document.getElementById('cargo-type-select')
+const regionSelect = createSearchSelect(document.getElementById('region-select'), { placeholder: 'World' })
+const countrySelect = createSearchSelect(document.getElementById('country-select'), { placeholder: 'All countries' })
+const coastalRegionSelect = createSearchSelect(document.getElementById('coastal-region-select'), { placeholder: 'All coastal regions' })
+const portSelect = createSearchSelect(document.getElementById('port-select'), { placeholder: 'All ports' })
+const cargoTypeSelect = createSearchSelect(document.getElementById('cargo-type-select'), { multi: true, placeholder: 'All cargo types' })
+cargoTypeSelect.setOptions(CARGO_TYPES.map((t) => ({ value: t, label: t })))
 const legendSelect = document.getElementById('legend-select')
 const legendItems = document.getElementById('legend-items')
 const resetBtn = document.getElementById('reset-btn')
@@ -38,20 +40,11 @@ function showError(err) {
   kpiCards.textContent = `Failed to load dashboard: ${err && err.message ? err.message : err}`
 }
 
-function populateSelect(select, options, placeholder) {
-  const current = select.value
-  select.innerHTML = ''
-  const placeholderOpt = document.createElement('option')
-  placeholderOpt.value = ''
-  placeholderOpt.textContent = placeholder
-  select.appendChild(placeholderOpt)
-  for (const opt of options) {
-    const el = document.createElement('option')
-    el.value = opt.value
-    el.textContent = opt.label
-    select.appendChild(el)
-  }
-  if (options.some((o) => o.value === current)) select.value = current
+// Single-select option lists get an explicit "clear" row (value '') at the
+// front matching the placeholder text, so it's pickable from inside the
+// menu too, not just implied by having nothing selected.
+function withPlaceholder(placeholder, opts) {
+  return [{ value: '', label: placeholder }, ...opts]
 }
 
 async function bootstrap() {
@@ -66,20 +59,20 @@ async function bootstrap() {
   ])
 
   function refreshCountryOptions() {
-    const region = regionSelect.value
+    const region = regionSelect.getValue()
     const countries = countriesInRegion(portsMaster, region)
-    populateSelect(countrySelect, countries.map((c) => ({ value: c, label: c })), 'All countries')
+    countrySelect.setOptions(withPlaceholder('All countries', countries.map((c) => ({ value: c, label: c }))))
   }
 
   function refreshPortOptions() {
-    const region = regionSelect.value
-    const country = countrySelect.value
+    const region = regionSelect.getValue()
+    const country = countrySelect.getValue()
     const ports = portsInCountry(portsMaster, region, country)
-    populateSelect(portSelect, ports.map((p) => ({ value: String(p.port_id), label: p.port })), 'All ports')
+    portSelect.setOptions(withPlaceholder('All ports', ports.map((p) => ({ value: String(p.port_id), label: p.port }))))
   }
 
-  populateSelect(regionSelect, distinctRegions(portsMaster).map((r) => ({ value: r, label: r })), 'World')
-  populateSelect(coastalRegionSelect, distinctCoastalRegions(portsMaster).map((r) => ({ value: r, label: r })), 'All coastal regions')
+  regionSelect.setOptions(withPlaceholder('World', distinctRegions(portsMaster).map((r) => ({ value: r, label: r }))))
+  coastalRegionSelect.setOptions(withPlaceholder('All coastal regions', distinctCoastalRegions(portsMaster).map((r) => ({ value: r, label: r }))))
   refreshCountryOptions()
   refreshPortOptions()
 
@@ -88,11 +81,16 @@ async function bootstrap() {
   // not a nested step inside Region/Country -- most-specific-wins, same as
   // the existing region/country/port chain.
   function currentScope() {
-    if (portSelect.value) return { scope: 'port', value: portSelect.value }
-    if (countrySelect.value) return { scope: 'country', value: countrySelect.value }
-    if (coastalRegionSelect.value) return { scope: 'coastal_region', value: coastalRegionSelect.value }
-    if (regionSelect.value) return { scope: 'region', value: regionSelect.value }
+    if (portSelect.getValue()) return { scope: 'port', value: portSelect.getValue() }
+    if (countrySelect.getValue()) return { scope: 'country', value: countrySelect.getValue() }
+    if (coastalRegionSelect.getValue()) return { scope: 'coastal_region', value: coastalRegionSelect.getValue() }
+    if (regionSelect.getValue()) return { scope: 'region', value: regionSelect.getValue() }
     return { scope: 'world', value: null }
+  }
+
+  function currentCargoTypes() {
+    const values = cargoTypeSelect.getValues()
+    return values.length > 0 ? values : null
   }
 
   // Legend/layer-visibility state. In 'level' mode a single Terminals
@@ -191,7 +189,7 @@ async function bootstrap() {
     setExtraPortsSync([], {})
     await setScope(scope, value)
     if (token !== requestToken) return
-    await renderKpiCards(scope, value, cargoTypeSelect.value || null)
+    await renderKpiCards(scope, value, currentCargoTypes())
     if (token !== requestToken) return
     await renderPortRelations(scope === 'port' ? Number(value) : null, selectPortById, toggleRelatedPort)
     relationsCollapseBtn.style.display = portRelations.innerHTML ? 'flex' : 'none'
@@ -204,8 +202,8 @@ async function bootstrap() {
   function toggleRelatedPort(portId, checked, isSubPorts) {
     if (checked) {
       extraPortIds.add(portId)
-      if (isSubPorts && portSelect.value) {
-        const parentRow = portsMaster.find((p) => String(p.port_id) === portSelect.value)
+      if (isSubPorts && portSelect.getValue()) {
+        const parentRow = portsMaster.find((p) => String(p.port_id) === portSelect.getValue())
         if (parentRow) extraPortOverrides[portId] = parentRow.port
       }
     } else {
@@ -220,50 +218,50 @@ async function bootstrap() {
   function selectPortById(portId) {
     const row = portsMaster.find((p) => p.port_id === portId)
     if (!row) return
-    regionSelect.value = row.region || ''
-    coastalRegionSelect.value = ''
+    regionSelect.setValue(row.region || '')
+    coastalRegionSelect.setValue('')
     refreshCountryOptions()
-    countrySelect.value = row.country || ''
+    countrySelect.setValue(row.country || '')
     refreshPortOptions()
-    portSelect.value = String(portId)
+    portSelect.setValue(String(portId))
     zoomToCurrentScope()
     applyScope().catch(showError)
   }
 
   function zoomToCurrentScope() {
     let rows = portsMaster
-    if (regionSelect.value) rows = rows.filter((p) => p.region === regionSelect.value)
-    if (coastalRegionSelect.value) rows = rows.filter((p) => p.coastal_region === coastalRegionSelect.value)
-    if (countrySelect.value) rows = rows.filter((p) => p.country === countrySelect.value)
-    if (portSelect.value) rows = rows.filter((p) => String(p.port_id) === portSelect.value)
-    const anyFilter = regionSelect.value || coastalRegionSelect.value || countrySelect.value || portSelect.value
+    if (regionSelect.getValue()) rows = rows.filter((p) => p.region === regionSelect.getValue())
+    if (coastalRegionSelect.getValue()) rows = rows.filter((p) => p.coastal_region === coastalRegionSelect.getValue())
+    if (countrySelect.getValue()) rows = rows.filter((p) => p.country === countrySelect.getValue())
+    if (portSelect.getValue()) rows = rows.filter((p) => String(p.port_id) === portSelect.getValue())
+    const anyFilter = regionSelect.getValue() || coastalRegionSelect.getValue() || countrySelect.getValue() || portSelect.getValue()
     fitBounds(anyFilter ? bboxForRows(rows) : null)
   }
 
-  regionSelect.addEventListener('change', async () => {
-    countrySelect.value = ''
-    portSelect.value = ''
+  regionSelect.onChange(async () => {
+    countrySelect.setValue('')
+    portSelect.setValue('')
     refreshCountryOptions()
     refreshPortOptions()
     zoomToCurrentScope()
     await applyScope().catch(showError)
   })
 
-  countrySelect.addEventListener('change', async () => {
-    portSelect.value = ''
+  countrySelect.onChange(async () => {
+    portSelect.setValue('')
     refreshPortOptions()
     zoomToCurrentScope()
     await applyScope().catch(showError)
   })
 
-  coastalRegionSelect.addEventListener('change', async () => {
-    portSelect.value = ''
+  coastalRegionSelect.onChange(async () => {
+    portSelect.setValue('')
     refreshPortOptions()
     zoomToCurrentScope()
     await applyScope().catch(showError)
   })
 
-  portSelect.addEventListener('change', async () => {
+  portSelect.onChange(async () => {
     zoomToCurrentScope()
     await applyScope().catch(showError)
   })
@@ -274,18 +272,19 @@ async function bootstrap() {
     applyLegendState()
   })
 
-  cargoTypeSelect.addEventListener('change', async () => {
+  cargoTypeSelect.onChange(async () => {
     const { scope, value } = currentScope()
-    await setCargoType(cargoTypeSelect.value).catch(showError)
-    await renderKpiCards(scope, value, cargoTypeSelect.value || null).catch(showError)
+    const types = currentCargoTypes()
+    await setCargoType(types).catch(showError)
+    await renderKpiCards(scope, value, types).catch(showError)
   })
 
   resetBtn.addEventListener('click', async () => {
-    regionSelect.value = ''
-    countrySelect.value = ''
-    coastalRegionSelect.value = ''
-    portSelect.value = ''
-    cargoTypeSelect.value = ''
+    regionSelect.setValue('')
+    countrySelect.setValue('')
+    coastalRegionSelect.setValue('')
+    portSelect.setValue('')
+    cargoTypeSelect.setValues([])
     refreshCountryOptions()
     refreshPortOptions()
     zoomToCurrentScope()
@@ -299,7 +298,7 @@ async function bootstrap() {
     renderLegend()
     setActiveLevelsSync(['port', 'terminal', 'berth'])
     setCargoTypeVisibility(CARGO_TYPES)
-    setCargoTypeSync('')
+    setCargoTypeSync(null)
 
     await applyScope().catch(showError)
   })
