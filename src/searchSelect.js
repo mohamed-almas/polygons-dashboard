@@ -93,17 +93,36 @@ export function createSearchSelect(container, { multi = false, placeholder = '' 
     for (const cb of listeners) cb()
   }
 
+  // The panel is moved to <body> and positioned fixed while open, instead
+  // of staying absolutely positioned inside .control-group -- the topbar
+  // has overflow-x:auto for its own horizontal scrolling, which was
+  // clipping the dropdown into a tiny scrollable sliver instead of letting
+  // it float over the page.
+  function positionPanel() {
+    const rect = toggle.getBoundingClientRect()
+    panel.style.left = `${rect.left}px`
+    panel.style.top = `${rect.bottom + 4}px`
+    panel.style.minWidth = `${rect.width}px`
+  }
+
   function openPanel() {
+    document.body.appendChild(panel)
     panel.hidden = false
+    positionPanel()
     container.classList.add('ss-open')
     searchInput.value = ''
     renderOptions()
     searchInput.focus()
+    window.addEventListener('scroll', positionPanel, true)
+    window.addEventListener('resize', positionPanel)
   }
 
   function closePanel() {
     panel.hidden = true
     container.classList.remove('ss-open')
+    if (panel.parentElement) panel.parentElement.removeChild(panel)
+    window.removeEventListener('scroll', positionPanel, true)
+    window.removeEventListener('resize', positionPanel)
   }
 
   toggle.addEventListener('click', () => {
@@ -117,11 +136,16 @@ export function createSearchSelect(container, { multi = false, placeholder = '' 
   // container.contains(e.target) -- an option click re-renders the list
   // synchronously, detaching the clicked node from the DOM before this
   // bubbles to document, which would make contains() wrongly report "outside".
+  // The panel now lives under <body> while open (see openPanel), so check
+  // it explicitly too -- it's no longer a descendant of container.
   document.addEventListener('click', (e) => {
-    if (!e.composedPath().includes(container)) closePanel()
+    const path = e.composedPath()
+    if (!path.includes(container) && !path.includes(panel)) closePanel()
   })
 
-  container.addEventListener('keydown', (e) => {
+  // Panel is reparented to <body> while open (see openPanel), so this
+  // needs its own listener rather than relying on bubbling through container.
+  panel.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closePanel()
   })
 
