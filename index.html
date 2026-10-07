@@ -6,7 +6,19 @@
     <title>Port Polygon Dashboard</title>
   </head>
   <body>
-    <div id="app">
+    <div id="login-screen" hidden>
+      <form id="login-form" class="login-card">
+        <h1>Port Terminal &amp; Berth Polygons</h1>
+        <p class="login-subtitle">Sign in with your invited account to continue.</p>
+        <label for="login-email">Email</label>
+        <input id="login-email" name="email" type="email" required autocomplete="username" />
+        <label for="login-password">Password</label>
+        <input id="login-password" name="password" type="password" required autocomplete="current-password" />
+        <p id="login-error" class="login-error"></p>
+        <button type="submit">Sign in</button>
+      </form>
+    </div>
+    <div id="app" hidden>
       <header id="topbar">
         <h1>Port Terminal &amp; Berth Polygons</h1>
 
@@ -38,6 +50,7 @@
         <div id="icon-buttons">
           <button id="reset-btn" type="button" title="Reset filters" aria-label="Reset filters">&#8635;</button>
           <button id="theme-toggle" type="button" title="Toggle light/dark" aria-label="Toggle light/dark"><span id="theme-icon">&#9789;</span></button>
+          <button id="logout-btn" type="button" title="Sign out" aria-label="Sign out">&#9211;</button>
         </div>
       </header>
 

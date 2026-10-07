@@ -1,5 +1,6 @@
 import './style.css'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import { supabase } from './supabaseClient.js'
 import { initMap, CARGO_TYPE_COLOR } from './map.js'
 import { renderKpiCards } from './kpi.js'
 import { loadPortsMaster, distinctRegions, distinctCoastalRegions, countriesInRegion, portsInCountry, bboxForRows } from './filters.js'
@@ -320,8 +321,59 @@ async function bootstrap() {
   await applyScope()
 }
 
-try {
-  await bootstrap()
-} catch (err) {
-  showError(err)
+// The underlying Supabase tables/RPCs only grant SELECT/EXECUTE to the
+// 'authenticated' role now (anon access was revoked) -- gate the app
+// behind a sign-in form using Supabase Auth itself, so only invited users
+// (added in the Supabase dashboard) can reach it.
+const loginScreen = document.getElementById('login-screen')
+const loginForm = document.getElementById('login-form')
+const loginError = document.getElementById('login-error')
+const appEl = document.getElementById('app')
+const logoutBtn = document.getElementById('logout-btn')
+
+function showApp() {
+  loginScreen.hidden = true
+  appEl.hidden = false
+}
+
+function showLogin() {
+  appEl.hidden = true
+  loginScreen.hidden = false
+}
+
+async function startApp() {
+  showApp()
+  try {
+    await bootstrap()
+  } catch (err) {
+    showError(err)
+  }
+}
+
+loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault()
+  loginError.textContent = ''
+  const email = document.getElementById('login-email').value
+  const password = document.getElementById('login-password').value
+  const { error } = await supabase.auth.signInWithPassword({ email, password })
+  if (error) {
+    loginError.textContent = error.message
+    return
+  }
+  await startApp()
+})
+
+logoutBtn.addEventListener('click', async () => {
+  await supabase.auth.signOut()
+  location.reload()
+})
+
+const {
+  data: { session },
+} = await supabase.auth.getSession()
+
+if (session) {
+  await startApp()
+} else {
+  showLogin()
 }
