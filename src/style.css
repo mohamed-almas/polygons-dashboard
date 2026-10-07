@@ -106,6 +106,15 @@ html, body, #app {
   transition: background 0.25s, color 0.25s;
 }
 
+/* #app/#login-screen are ID selectors, which beat the browser's own
+   [hidden] { display: none } UA rule (lower specificity) -- without this,
+   setting the `hidden` property from JS toggled the attribute but did
+   nothing visually, since the id rule's `display: flex` always won. */
+#app[hidden],
+#login-screen[hidden] {
+  display: none;
+}
+
 #topbar {
   display: flex;
   flex-wrap: nowrap;
